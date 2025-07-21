@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DavintoHQ Admin Announcements</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+
+  <header class="bg-indigo-800 text-white p-4 shadow">
+    <h1 class="text-xl font-bold">📢 Admin: Post Announcement</h1>
+    <p class="text-sm mt-1" id="user-info"></p>
+  </header>
+
+  <main class="p-6 flex flex-col gap-4 flex-1">
+    <div id="admin-section" class="hidden">
+      <input id="title" type="text" placeholder="Title" class="w-full p-3 border rounded" />
+      <textarea id="body" rows="5" placeholder="Write announcement here..." class="w-full p-3 border rounded"></textarea>
+      <input type="file" id="fileInput" class="block" />
+      <button onclick="postAnnouncement()" class="mt-2 bg-indigo-600 text-white py-2 px-4 rounded w-full">
+        Post Announcement
+      </button>
+    </div>
+    <p id="not-allowed" class="text-center text-red-600 font-semibold hidden">You are not allowed to post announcements.</p>
+  </main>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+    const storage = getStorage();
+
+    const ownerEmail = "macdinodavinto@gmail.com";
+    const ownerPhone = "+2348169045105";
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return location.href = "index.html";
+
+      const isOwner = user.email === ownerEmail || user.phoneNumber === ownerPhone;
+      document.getElementById("user-info").innerText = `Logged in as ${user.email || user.phoneNumber}`;
+      document.getElementById(isOwner ? "admin-section" : "not-allowed").classList.remove("hidden");
+
+      if (!isOwner) document.getElementById("admin-section").remove();
+    });
+
+    async function postAnnouncement() {
+      const title = document.getElementById("title").value.trim();
+      const body = document.getElementById("body").value.trim();
+      const file = document.getElementById("fileInput").files[0];
+
+      if (!title && !body && !file) {
+        return alert("Please write something or upload a file.");
+      }
+
+      let fileURL = null;
+
+      if (file) {
+        const fileRef = ref(storage, `announcements/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        fileURL = await getDownloadURL(fileRef);
+      }
+
+      await addDoc(collection(db, "announcements"), {
+        title,
+        body,
+        fileURL,
+        timestamp: serverTimestamp()
+      });
+
+      alert("Announcement posted!");
+      document.getElementById("title").value = "";
+      document.getElementById("body").value = "";
+      document.getElementById("fileInput").value = "";
+    }
+  </script>
+</body>
+</html>

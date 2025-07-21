@@ -1,49 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Manage Admins - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
-  <div class="p-4 max-w-xl mx-auto">
-    <h1 class="text-2xl font-bold text-indigo-700 mb-4">👤 Admin Management</h1>
-    <p id="user-info" class="text-sm mb-4 text-gray-600"></p>
+<body class="bg-gray-100 min-h-screen flex justify-center items-center">
+  <div class="bg-white p-6 rounded shadow max-w-md w-full space-y-4">
+    <h1 class="text-xl font-bold text-indigo-700">👑 Manage Admins</h1>
+    <p class="text-gray-600">Only the owner can view this page.</p>
 
-    <div id="admin-section" class="hidden space-y-4">
-      <div class="bg-white p-4 rounded shadow space-y-2">
-        <input id="adminInput" type="text" placeholder="Enter admin email or phone" class="w-full p-2 border rounded" />
-        <button onclick="addAdmin()" class="bg-green-600 text-white px-4 py-2 rounded w-full">Add Admin</button>
+    <div>
+      <input type="text" id="uidInput" placeholder="Enter user UID" class="w-full px-3 py-2 border rounded mb-2" />
+      <div class="flex gap-2">
+        <button id="addBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Add Admin</button>
+        <button id="removeBtn" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Remove Admin</button>
       </div>
-
-      <h2 class="text-lg font-semibold text-gray-700">Current Admins</h2>
-      <ul id="adminList" class="space-y-2"></ul>
     </div>
+
+    <div>
+      <h2 class="text-lg font-semibold mt-4">Current Admins:</h2>
+      <ul id="adminList" class="text-sm text-gray-700 mt-2 space-y-1"></ul>
+    </div>
+
+    <button onclick="logout()" class="mt-4 w-full bg-gray-800 text-white py-2 rounded hover:bg-black">Logout</button>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      doc,
-      setDoc,
-      deleteDoc,
-      getDocs,
-      onSnapshot,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, setDoc, deleteDoc, doc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
-      storageBucket: "davintohq.firebasestorage.app",
+      storageBucket: "davintohq.firebaseapp.com",
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
@@ -54,65 +47,56 @@
 
     const ownerEmail = "macdinodavinto@gmail.com";
     const ownerPhone = "+2348169045105";
-    const adminRef = collection(db, "admins");
 
-    let currentUser;
+    async function loadAdmins() {
+      const admins = await getDocs(collection(db, "admins"));
+      const list = document.getElementById("adminList");
+      list.innerHTML = "";
+      admins.forEach(doc => {
+        const li = document.createElement("li");
+        li.textContent = `👤 ${doc.id}`;
+        list.appendChild(li);
+      });
+    }
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href = "index.html";
-      currentUser = user;
-
-      const userId = user.email || user.phoneNumber;
-      document.getElementById("user-info").innerText = `Logged in as ${userId}`;
-
-      const isOwner = user.email === ownerEmail || user.phoneNumber === ownerPhone;
-      if (!isOwner) return alert("Access Denied. Owner only.");
-
-      document.getElementById("admin-section").classList.remove("hidden");
+    async function addAdmin(uid) {
+      await setDoc(doc(db, "admins", uid), { role: "admin" });
+      alert("Admin added!");
       loadAdmins();
-    });
-
-    async function addAdmin() {
-      const input = document.getElementById("adminInput").value.trim();
-      if (!input) return alert("Enter email or phone.");
-
-      const newAdminUID = crypto.randomUUID();
-      const newAdminDoc = doc(db, "admins", newAdminUID);
-
-      await setDoc(newAdminDoc, {
-        email: input.includes("@") ? input : "",
-        phone: input.includes("@") ? "" : input,
-        addedBy: currentUser.email || currentUser.phoneNumber,
-        timestamp: serverTimestamp()
-      });
-
-      document.getElementById("adminInput").value = "";
     }
 
-    function loadAdmins() {
-      onSnapshot(adminRef, snapshot => {
-        const list = document.getElementById("adminList");
-        list.innerHTML = "";
-        snapshot.forEach(docSnap => {
-          const admin = docSnap.data();
-          const li = document.createElement("li");
-          li.className = "bg-white p-3 rounded shadow flex justify-between items-center";
-
-          const label = admin.email || admin.phone;
-          li.innerHTML = `
-            <span>${label}</span>
-            <button onclick="removeAdmin('${docSnap.id}')" class="text-red-600 hover:underline">Remove</button>
-          `;
-          list.appendChild(li);
-        });
-      });
+    async function removeAdmin(uid) {
+      await deleteDoc(doc(db, "admins", uid));
+      alert("Admin removed!");
+      loadAdmins();
     }
 
-    async function removeAdmin(id) {
-      if (confirm("Remove this admin?")) {
-        await deleteDoc(doc(db, "admins", id));
+    function logout() {
+      signOut(auth).then(() => location.href = "index.html");
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return location.href = "index.html";
+
+      const emailOrPhone = user.email || user.phoneNumber;
+      if (emailOrPhone !== ownerEmail && emailOrPhone !== ownerPhone) {
+        alert("Access denied. Only the owner can manage admins.");
+        return location.href = "index.html";
       }
-    }
+
+      // Load admin list after owner check
+      loadAdmins();
+
+      document.getElementById("addBtn").onclick = () => {
+        const uid = document.getElementById("uidInput").value.trim();
+        if (uid) addAdmin(uid);
+      };
+
+      document.getElementById("removeBtn").onclick = () => {
+        const uid = document.getElementById("uidInput").value.trim();
+        if (uid) removeAdmin(uid);
+      };
+    });
   </script>
 </body>
 </html>

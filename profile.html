@@ -1,32 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>My Profile - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <title>Profile - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      display: flex;
+      min-height: 100vh;
+    }
+    #sidebar {
+      width: 220px;
+    }
+    #main-content {
+      flex: 1;
+      padding: 1rem;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="bg-white shadow-md p-6 rounded-lg w-full max-w-md text-center space-y-4">
-    <h1 class="text-2xl font-bold text-indigo-700">👤 My Profile</h1>
-    <p id="user-email" class="text-gray-600">Loading...</p>
-    <p id="user-role" class="font-semibold text-blue-700"></p>
-
-    <button onclick="logout()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700">
-      Logout
-    </button>
-  </div>
-
-  <script type="module">
+<body>
+  <div id="sidebar"></div>
+  <div id="main-content" class="bg-gray-100">
+    <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+      <h1 class="text-2xl font-bold text-blue-700 mb-4">👤 Profile</h1>
+      <div class="space-y-2 text-gray-700" id="userInfo">
+        <p><strong>Email:</strong> <span id="userEmail">...</span></p>
+        <p><strong>Phone:</strong> <span id="userPhone">...</span></p>
+        <p><strong>Role:</strong> <span id="userRole">...</span></p>
+        <p><strong>Username:</strong> <span id="usernameText">(none)</span></p>
+        <div class="flex space-x-2 mt-2">
+          <input id="usernameInput" class="border px-3 py-1 rounded w-full" placeholder="Enter username">
+          <button id="saveUsernameBtn" class="bg-blue-600 text-white px-4 py-1 rounded">Save</button>
+        </div>
+      </div>
+      <button id="logoutBtn" class="mt-6 bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">Logout</button>
+    </div>
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
-      storageBucket: "davintohq.firebaseapp.com",
+      storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
@@ -38,29 +56,41 @@
     const ownerEmail = "macdinodavinto@gmail.com";
     const ownerPhone = "+2348169045105";
 
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async user => {
       if (!user) return location.href = "index.html";
 
-      const emailOrPhone = user.email || user.phoneNumber;
-      document.getElementById("user-email").innerText = `Logged in as: ${emailOrPhone}`;
+      const uid = user.uid;
+      const email = user.email || "-";
+      const phone = user.phoneNumber || "-";
 
-      if (emailOrPhone === ownerEmail || emailOrPhone === ownerPhone) {
-        document.getElementById("user-role").innerText = "👑 You are the Owner";
-      } else {
-        const adminDoc = await getDoc(doc(db, "admins", user.uid));
-        if (adminDoc.exists()) {
-          document.getElementById("user-role").innerText = "🛠️ You are an Admin";
-        } else {
-          document.getElementById("user-role").innerText = "👤 You are a Member";
-        }
+      document.getElementById("userEmail").textContent = email;
+      document.getElementById("userPhone").textContent = phone;
+
+      let role = "user";
+      if (email === ownerEmail || phone === ownerPhone) role = "owner";
+      else {
+        const adminDoc = await getDoc(doc(db, "admins", uid));
+        if (adminDoc.exists()) role = "admin";
       }
+      document.getElementById("userRole").textContent = role;
+
+      const userDocRef = doc(db, "users", uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists() && userDoc.data().username) {
+        document.getElementById("usernameText").textContent = userDoc.data().username;
+      }
+
+      document.getElementById("saveUsernameBtn").onclick = async () => {
+        const newUsername = document.getElementById("usernameInput").value.trim();
+        if (!newUsername) return alert("Please enter a username.");
+        await setDoc(userDocRef, { username: newUsername }, { merge: true });
+        document.getElementById("usernameText").textContent = newUsername;
+        alert("Username saved.");
+      };
+
+      document.getElementById("logoutBtn").onclick = () => signOut(auth);
     });
 
-    function logout() {
-      signOut(auth).then(() => {
-        location.href = "index.html";
-      });
-    }
-  </script>
-</body>
+    import("./sidebar.js").then(module => module.loadSidebar());
+  </script></body>
 </html>

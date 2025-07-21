@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>DavintoHQ Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    input, button { display: block; margin: 10px 0; padding: 8px; width: 100%; max-width: 300px; }
+    .section { margin-bottom: 30px; }
+  </style>
+</head>
+<body>
+  <h2>Welcome to DavintoHQ</h2>
+
+  <!-- Email/Password Login -->
+  <div class="section">
+    <h3>Login with Email</h3>
+    <input type="email" id="email" placeholder="Email">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="emailLogin()">Login with Email</button>
+    <button onclick="emailSignup()">Create New Account</button>
+  </div>
+
+  <!-- Phone Login -->
+  <div class="section">
+    <h3>Login with Phone</h3>
+    <input type="tel" id="phone" placeholder="+234XXXXXXXXXX">
+    <div id="recaptcha-container"></div>
+    <button onclick="sendOTP()">Send OTP</button>
+    <input type="text" id="otp" placeholder="Enter OTP">
+    <button onclick="verifyOTP()">Verify OTP</button>
+  </div>
+
+  <!-- Google Login -->
+  <div class="section">
+    <h3>Or</h3>
+    <button onclick="googleLogin()">Login with Google</button>
+  </div>
+
+  <!-- Firebase SDKs -->
+  <script type="module">
+    // Import Firebase SDKs
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, 
+             signInWithEmailAndPassword, 
+             createUserWithEmailAndPassword, 
+             signInWithPhoneNumber, 
+             RecaptchaVerifier, 
+             signInWithPopup, 
+             GoogleAuthProvider 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    // Your Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAusz

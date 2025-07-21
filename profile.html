@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>My Profile - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="bg-white shadow-md p-6 rounded-lg w-full max-w-md text-center space-y-4">
+    <h1 class="text-2xl font-bold text-indigo-700">👤 My Profile</h1>
+    <p id="user-email" class="text-gray-600">Loading...</p>
+    <p id="user-role" class="font-semibold text-blue-700"></p>
+
+    <button onclick="logout()" class="mt-4 px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700">
+      Logout
+    </button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebaseapp.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+
+    const ownerEmail = "macdinodavinto@gmail.com";
+    const ownerPhone = "+2348169045105";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return location.href = "index.html";
+
+      const emailOrPhone = user.email || user.phoneNumber;
+      document.getElementById("user-email").innerText = `Logged in as: ${emailOrPhone}`;
+
+      if (emailOrPhone === ownerEmail || emailOrPhone === ownerPhone) {
+        document.getElementById("user-role").innerText = "👑 You are the Owner";
+      } else {
+        const adminDoc = await getDoc(doc(db, "admins", user.uid));
+        if (adminDoc.exists()) {
+          document.getElementById("user-role").innerText = "🛠️ You are an Admin";
+        } else {
+          document.getElementById("user-role").innerText = "👤 You are a Member";
+        }
+      }
+    });
+
+    function logout() {
+      signOut(auth).then(() => {
+        location.href = "index.html";
+      });
+    }
+  </script>
+</body>
+</html>

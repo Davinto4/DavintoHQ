@@ -1,56 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; }
-    input, button { display: block; margin: 10px 0; padding: 8px; width: 100%; max-width: 300px; }
-    .section { margin-bottom: 30px; }
-  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <h2>Welcome to DavintoHQ</h2>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
+    <h2 class="text-2xl font-bold text-center mb-6">Welcome to <span class="text-indigo-600">DavintoHQ</span></h2>
 
-  <!-- Email/Password Login -->
-  <div class="section">
-    <h3>Login with Email</h3>
-    <input type="email" id="email" placeholder="Email">
-    <input type="password" id="password" placeholder="Password">
-    <button onclick="emailLogin()">Login with Email</button>
-    <button onclick="emailSignup()">Create New Account</button>
-  </div>
+    <!-- Email Login -->
+    <div class="mb-4">
+      <input id="email" type="email" placeholder="Email" class="w-full border px-4 py-2 rounded mb-2" />
+      <input id="password" type="password" placeholder="Password" class="w-full border px-4 py-2 rounded" />
+      <button onclick="emailLogin()" class="w-full bg-indigo-600 text-white py-2 rounded mt-2">Login with Email</button>
+      <button onclick="emailSignup()" class="w-full bg-gray-300 text-black py-2 rounded mt-1">Sign up</button>
+    </div>
 
-  <!-- Phone Login -->
-  <div class="section">
-    <h3>Login with Phone</h3>
-    <input type="tel" id="phone" placeholder="+234XXXXXXXXXX">
-    <div id="recaptcha-container"></div>
-    <button onclick="sendOTP()">Send OTP</button>
-    <input type="text" id="otp" placeholder="Enter OTP">
-    <button onclick="verifyOTP()">Verify OTP</button>
-  </div>
+    <!-- Divider -->
+    <div class="text-center text-gray-500 my-4">OR</div>
 
-  <!-- Google Login -->
-  <div class="section">
-    <h3>Or</h3>
-    <button onclick="googleLogin()">Login with Google</button>
+    <!-- Phone Login -->
+    <div class="mb-4">
+      <input id="phone" type="tel" placeholder="+234XXXXXXXXXX" class="w-full border px-4 py-2 rounded mb-2" />
+      <div id="recaptcha-container"></div>
+      <button onclick="sendOTP()" class="w-full bg-green-600 text-white py-2 rounded">Send OTP</button>
+      <input id="otp" type="text" placeholder="Enter OTP" class="w-full border px-4 py-2 rounded mt-2" />
+      <button onclick="verifyOTP()" class="w-full bg-green-700 text-white py-2 rounded mt-1">Verify</button>
+    </div>
+
+    <!-- Google Login -->
+    <div class="text-center mb-2">
+      <button onclick="googleLogin()" class="w-full bg-red-500 text-white py-2 rounded">Login with Google</button>
+    </div>
   </div>
 
   <!-- Firebase SDKs -->
   <script type="module">
-    // Import Firebase SDKs
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, 
-             signInWithEmailAndPassword, 
-             createUserWithEmailAndPassword, 
-             signInWithPhoneNumber, 
-             RecaptchaVerifier, 
-             signInWithPopup, 
-             GoogleAuthProvider 
+    import {
+      getAuth,
+      signInWithEmailAndPassword,
+      createUserWithEmailAndPassword,
+      signInWithPhoneNumber,
+      RecaptchaVerifier,
+      signInWithPopup,
+      GoogleAuthProvider
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // Your Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAusz
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+
+    const ownerEmail = "macdinodavinto@gmail.com";
+    const ownerPhone = "+2348169045105";
+
+    // Setup Recaptcha
+    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
+      size: 'invisible',
+      callback: () => sendOTP()
+    }, auth);
+
+    const emailLogin = () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      signInWithEmailAndPassword(auth, email, password)
+        .then(res => handleSuccess(res.user))
+        .catch(err => alert(err.message));
+    };
+
+    const emailSignup = () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      createUserWithEmailAndPassword(auth, email, password)
+        .then(res => handleSuccess(res.user))
+        .catch(err => alert(err.message));
+    };
+
+    const sendOTP = () => {
+      const phone = document.getElementById('phone').value;
+      const appVerifier = window.recaptchaVerifier;
+      signInWithPhoneNumber(auth, phone, appVerifier)
+        .then(confirmResult => {
+          window.confirmationResult = confirmResult;
+          alert("OTP sent!");
+        })
+        .catch(err => alert(err.message));
+    };
+
+    const verifyOTP = () => {
+      const code = document.getElementById('otp').value;
+      window.confirmationResult.confirm(code)
+        .then(res => handleSuccess(res.user))
+        .catch(err => alert("Invalid OTP: " + err.message));
+    };
+
+    const googleLogin = () => {
+      const provider = new GoogleAuthProvider();
+      signInWithPopup(auth, provider)
+        .then(res => handleSuccess(res.user))
+        .catch(err => alert(err.message));
+    };
+
+    const handleSuccess = async (user) => {
+      const isOwner = (user.email === ownerEmail || user.phoneNumber === ownerPhone);
+      const profileRef = doc(db, "users", user.uid);
+      await setDoc(profileRef, {
+        uid: user.uid,
+        email: user.email || null,
+        phone: user.phoneNumber || null,
+        isOwner: isOwner,
+        timestamp: Date.now()
+      }, { merge: true });
+
+      window.location.href = "chat.html";
+    };
+  </script>
+</body>
+  </html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>DavintoHQ Files</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col">
+
+  <header class="bg-blue-800 text-white p-4">
+    <h1 class="text-xl font-bold">📁 Company Files</h1>
+    <p class="text-sm mt-1" id="user-info"></p>
+  </header>
+
+  <main class="p-4 flex flex-col gap-6 flex-1">
+    <div id="admin-upload" class="hidden bg-white p-4 rounded shadow space-y-3">
+      <input type="text" id="fileTitle" placeholder="File title" class="w-full border p-2 rounded" />
+      <input type="file" id="fileInput" class="w-full" />
+      <button onclick="uploadFile()" class="bg-blue-600 text-white px-4 py-2 rounded w-full">Upload File</button>
+    </div>
+
+    <div id="file-list" class="space-y-4">
+      <!-- Files will be shown here -->
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      query,
+      orderBy,
+      onSnapshot,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore();
+    const storage = getStorage();
+
+    const ownerEmail = "macdinodavinto@gmail.com";
+    const ownerPhone = "+2348169045105";
+
+    const filesRef = collection(db, "shared_files");
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return location.href = "index.html";
+
+      const userId = user.email || user.phoneNumber;
+      document.getElementById("user-info").innerText = `Logged in as ${userId}`;
+
+      const isOwner = user.email === ownerEmail || user.phoneNumber === ownerPhone;
+      if (isOwner) {
+        document.getElementById("admin-upload").classList.remove("hidden");
+      }
+
+      const q = query(filesRef, orderBy("timestamp", "desc"));
+      onSnapshot(q, snapshot => {
+        const list = document.getElementById("file-list");
+        list.innerHTML = "";
+
+        snapshot.forEach(doc => {
+          const file = doc.data();
+          const div = document.createElement("div");
+          div.className = "bg-white p-4 rounded shadow";
+
+          div.innerHTML = `
+            <p class="font-semibold">${file.title || "Untitled File"}</p>
+            <a href="${file.fileURL}" target="_blank" class="text-blue-600 underline">Download</a>
+            <p class="text-sm text-gray-500">${new Date(file.timestamp?.toDate()).toLocaleString()}</p>
+          `;
+
+          list.appendChild(div);
+        });
+      });
+    });
+
+    async function uploadFile() {
+      const file = document.getElementById("fileInput").files[0];
+      const title = document.getElementById("fileTitle").value.trim();
+
+      if (!file) return alert("Choose a file");
+      const fileRef = ref(storage, `files/${Date.now()}_${file.name}`);
+      await uploadBytes(fileRef, file);
+      const fileURL = await getDownloadURL(fileRef);
+
+      await addDoc(filesRef, {
+        title,
+        fileURL,
+        timestamp: serverTimestamp()
+      });
+
+      alert("File uploaded!");
+      document.getElementById("fileInput").value = "";
+      document.getElementById("fileTitle").value = "";
+    }
+  </script>
+</body>
+</html>

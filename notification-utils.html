@@ -1,0 +1,10 @@
+// notification-utils.js import { getFirestore, collection, query, where, onSnapshot, updateDoc, doc, orderBy, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; import { getAuth } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const db = getFirestore(); const auth = getAuth();
+
+export function listenForNotifications(callback) { auth.onAuthStateChanged(user => { if (!user) return; const q = query( collection(db, "notifications"), where("to", "in", ["all", user.uid]), orderBy("timestamp", "desc") ); onSnapshot(q, snap => { const data = []; snap.forEach(doc => data.push({ id: doc.id, ...doc.data() })); callback(data); }); }); }
+
+export async function markAsRead(notificationId) { const user = auth.currentUser; if (!user) return; const ref = doc(db, "notifications", notificationId); await updateDoc(ref, { readBy: [...new Set([...user.readBy || [], user.uid])] }); }
+
+export async function sendNotification({ title, message, to = "all" }) { await addDoc(collection(db, "notifications"), { title, message, to, timestamp: serverTimestamp(), readBy: [] }); }
+

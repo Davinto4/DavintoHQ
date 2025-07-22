@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Global Chat | DavintoHQ</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <style>
@@ -59,15 +59,16 @@
       border-radius: 1rem;
       max-width: 70%;
       animation: fadeIn 0.4s ease;
+      position: relative;
     }
     .message.me {
       background: #4CAF50;
       color: white;
       margin-left: auto;
     }
-    .message .sender {
-      font-weight: bold;
-      display: block;
+    .sender {
+      font-size: 0.75rem;
+      color: gray;
       margin-bottom: 0.25rem;
     }
     .chat-input {
@@ -97,6 +98,15 @@
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
+    .reactions {
+      font-size: 0.8rem;
+      margin-top: 0.3rem;
+      display: flex;
+      gap: 0.3rem;
+    }
+    .reactions span {
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -110,7 +120,7 @@
     <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
   </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -118,8 +128,7 @@
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -130,36 +139,43 @@
     const chatMessage = document.getElementById('chatMessage');
     const themeToggle = document.getElementById('themeToggle');
 
+    const username = localStorage.getItem('username') || `User${Math.floor(Math.random() * 10000)}`;
+
     themeToggle.onclick = () => {
       const root = document.documentElement;
       const current = root.getAttribute('data-theme');
       root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
     };
 
-    const username = localStorage.getItem('username') || 'Guest';
+    const renderMessage = (data) => {
+      const div = document.createElement('div');
+      div.className = `message ${data.username === username ? 'me' : ''}`;
+      div.innerHTML = `
+        <div class="sender">${data.username}</div>
+        ${data.message}
+        <div class="reactions">
+          <span>❤️</span><span>😂</span><span>🔥</span>
+        </div>
+      `;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    };
 
     sendBtn.onclick = async () => {
       const msg = chatMessage.value.trim();
       if (msg === '') return;
-      await addDoc(collection(db, 'globalChats'), {
-        sender: username,
+      await addDoc(collection(db, "globalChats"), {
+        username,
         message: msg,
         timestamp: serverTimestamp()
       });
       chatMessage.value = '';
     };
 
-    const q = query(collection(db, 'globalChats'), orderBy('timestamp'));
+    const q = query(collection(db, "globalChats"), orderBy("timestamp"));
     onSnapshot(q, (snapshot) => {
       chatBox.innerHTML = '';
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.className = `message ${data.sender === username ? 'me' : ''}`;
-        div.innerHTML = `<span class="sender">${data.sender}</span>${data.message}`;
-        chatBox.appendChild(div);
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
+      snapshot.forEach((doc) => renderMessage(doc.data()));
     });
   </script></body>
 </html>

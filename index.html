@@ -1,37 +1,54 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ Login</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css" />
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="firebase.js" defer></script>
 </head>
 <body>
   <div class="auth-container">
-    <h1>DavintoHQ</h1><div class="form">
-  <input type="email" id="email" placeholder="Email">
-  <input type="password" id="password" placeholder="Password">
-  <input type="text" id="username" placeholder="Username (optional)">
+    <h1>DavintoHQ</h1>
 
-  <button id="loginBtn">Login</button>
-  <button id="signupBtn">Sign Up</button>
-  <button id="anonymousBtn">Continue as Guest</button>
+    <div class="form">
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <input type="text" id="username" placeholder="Username (for signup only)" />
 
-  <p id="authMessage"></p>
-</div>
+      <button id="loginBtn">Login</button>
+      <button id="signupBtn">Sign Up</button>
+      <button id="guestBtn">Continue as Guest</button>
 
-  </div>  <script>
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+      <p id="authMessage"></p>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
+
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk',
+      authDomain: 'izuchukwu-foods.firebaseapp.com',
+      projectId: 'izuchukwu-foods',
+      storageBucket: 'izuchukwu-foods.firebasestorage.app',
+      messagingSenderId: '811147638426',
+      appId: '1:811147638426:web:f2403b6cf7e0b6f19b1123'
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
     document.getElementById("loginBtn").onclick = async () => {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
       try {
-        await auth.signInWithEmailAndPassword(email, password);
+        await signInWithEmailAndPassword(auth, email, password);
         window.location.href = "dashboard.html";
       } catch (error) {
         document.getElementById("authMessage").innerText = error.message;
@@ -41,39 +58,37 @@
     document.getElementById("signupBtn").onclick = async () => {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
-      const username = document.getElementById("username").value;
+      const username = document.getElementById("username").value || "Anonymous";
+
       try {
-        const result = await auth.createUserWithEmailAndPassword(email, password);
+        const result = await createUserWithEmailAndPassword(auth, email, password);
         const user = result.user;
-
-        await db.collection("users").doc(user.uid).set({
+        await setDoc(doc(db, "users", user.uid), {
           email: user.email,
-          username: username || "Anonymous",
+          username: username,
           role: "user",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
-
         window.location.href = "dashboard.html";
       } catch (error) {
         document.getElementById("authMessage").innerText = error.message;
       }
     };
 
-    document.getElementById("anonymousBtn").onclick = async () => {
+    document.getElementById("guestBtn").onclick = async () => {
       try {
-        const result = await auth.signInAnonymously();
+        const result = await signInAnonymously(auth);
         const user = result.user;
-
-        await db.collection("users").doc(user.uid).set({
+        await setDoc(doc(db, "users", user.uid), {
           username: "Guest",
           role: "guest",
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+          createdAt: serverTimestamp()
         });
-
         window.location.href = "dashboard.html";
       } catch (error) {
         document.getElementById("authMessage").innerText = error.message;
       }
     };
-  </script></body>
+  </script>
+</body>
 </html>

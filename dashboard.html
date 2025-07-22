@@ -17,49 +17,33 @@
   <div class="dashboard-container">
     <aside id="sidebar"></aside>
     <main class="dashboard-content">
-      <h1>Welcome to DavintoHQ</h1>
+      <h1 id="greeting">Welcome to DavintoHQ</h1>
 
       <div class="quick-links">
-        <a href="blog.html" class="dashboard-card">
-          <i data-lucide="file-text"></i><span>Blog</span>
-        </a>
-        <a href="private-chat.html" class="dashboard-card">
-          <i data-lucide="message-square"></i><span>Private Chat</span>
-        </a>
-        <a href="global-chat.html" class="dashboard-card">
-          <i data-lucide="globe"></i><span>Global Chat</span>
-        </a>
-        <a href="announcements.html" class="dashboard-card">
-          <i data-lucide="megaphone"></i><span>Announcements</span>
-        </a>
-        <a href="files.html" class="dashboard-card">
-          <i data-lucide="folder"></i><span>Files</span>
-        </a>
-        <a href="reports.html" class="dashboard-card">
-          <i data-lucide="bar-chart-2"></i><span>Reports</span>
-        </a>
-        <a href="search.html" class="dashboard-card">
-          <i data-lucide="search"></i><span>Search</span>
-        </a>
-        <a href="profile.html" class="dashboard-card">
-          <i data-lucide="user"></i><span>My Profile</span>
-        </a>
+        <a href="blog.html" class="dashboard-card"><i data-lucide="file-text"></i><span>Blog</span></a>
+        <a href="private-chat.html" class="dashboard-card"><i data-lucide="message-square"></i><span>Private Chat</span></a>
+        <a href="global-chat.html" class="dashboard-card"><i data-lucide="globe"></i><span>Global Chat</span></a>
+        <a href="announcements.html" class="dashboard-card"><i data-lucide="megaphone"></i><span>Announcements</span></a>
+        <a href="files.html" class="dashboard-card"><i data-lucide="folder"></i><span>Files</span></a>
+        <a href="reports.html" class="dashboard-card"><i data-lucide="bar-chart-2"></i><span>Reports</span></a>
+        <a href="search.html" class="dashboard-card"><i data-lucide="search"></i><span>Search</span></a>
+        <a href="profile.html" class="dashboard-card"><i data-lucide="user"></i><span>My Profile</span></a>
       </div>
 
       <section class="dashboard-stats">
-        <h2>Site Overview</h2>
+        <h2>Live Site Stats</h2>
         <div class="stats-grid">
           <div class="stat-box">
             <h3>Total Users</h3>
-            <p id="totalUsers">Loading...</p>
+            <p id="totalUsers">0</p>
           </div>
           <div class="stat-box">
-            <h3>Active Chats</h3>
-            <p id="activeChats">Loading...</p>
+            <h3>Active Global Chats</h3>
+            <p id="activeChats">0</p>
           </div>
           <div class="stat-box">
             <h3>Announcements</h3>
-            <p id="announcementCount">Loading...</p>
+            <p id="announcementCount">0</p>
           </div>
         </div>
       </section>
@@ -67,15 +51,15 @@
       <section class="recent-activity">
         <h2>Recent Activity</h2>
         <ul id="recentActivityList">
-          <li>Loading recent updates...</li>
+          <li>Loading recent activity...</li>
         </ul>
       </section>
 
       <section id="adminWidgets" style="display: none;">
         <h2>Admin Tools</h2>
         <div class="stats-grid">
-          <a href="manage-admins.html" class="dashboard-card"><i data-lucide="shield"></i><span>Manage Admins</span></a>
-          <a href="admin.html" class="dashboard-card"><i data-lucide="settings"></i><span>Admin Panel</span></a>
+          <a href="manage-admins.html" class="dashboard-card"><i data-lucide="shield-check"></i><span>Manage Admins</span></a>
+          <a href="admin.html" class="dashboard-card"><i data-lucide="settings"></i><span>Admin Dashboard</span></a>
         </div>
       </section>
     </main>
@@ -86,14 +70,17 @@
     const db = firebase.firestore();
 
     auth.onAuthStateChanged(user => {
-      if (!user) return window.location.href = 'index.html';
+      if (!user) return location.href = 'index.html';
 
       const uid = user.uid;
-      const userDocRef = db.collection('users').doc(uid);
+      const userRef = db.collection('users').doc(uid);
 
-      userDocRef.get().then(doc => {
+      userRef.onSnapshot(doc => {
         const data = doc.data();
+        const name = data?.name || 'User';
         const role = data?.role || 'user';
+        document.getElementById('greeting').innerText = `Welcome, ${name}`;
+
         if (['admin', 'owner'].includes(role)) {
           document.getElementById('adminWidgets').style.display = 'block';
         }
@@ -120,7 +107,7 @@
           snapshot.forEach(doc => {
             const log = doc.data();
             const li = document.createElement('li');
-            li.textContent = `${log.message} (${new Date(log.timestamp?.toDate()).toLocaleString()})`;
+            li.textContent = `${log.message || 'No message'} • ${new Date(log.timestamp?.toDate()).toLocaleString()}`;
             list.appendChild(li);
           });
         });
@@ -137,15 +124,15 @@
       justify-content: center;
       padding: 1rem;
       border-radius: 1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease;
-      text-align: center;
       background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: 0.2s ease;
+      text-align: center;
       gap: 0.5rem;
     }
     .dashboard-card:hover {
-      transform: scale(1.05);
-      background: #f0f0f0;
+      transform: scale(1.03);
+      background: #f3f3f3;
     }
     .dashboard-card i {
       width: 32px;
@@ -155,6 +142,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
+      margin-top: 1rem;
     }
     .stat-box {
       background: #fff;
@@ -165,12 +153,13 @@
     .recent-activity ul {
       list-style: none;
       padding: 0;
+      margin-top: 1rem;
     }
     .recent-activity li {
-      background: #fafafa;
+      background: #f9f9f9;
       margin-bottom: 0.5rem;
-      padding: 0.5rem 1rem;
-      border-left: 4px solid #888;
+      padding: 0.75rem 1rem;
+      border-left: 4px solid #3498db;
       border-radius: 0.5rem;
     }
   </style>

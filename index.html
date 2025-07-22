@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DavintoHQ - Login</title>
+  <title>DavintoHQ Login</title>
   <link rel="stylesheet" href="styles.css" />
   <script type="module">
+    // Firebase 9 Modular SDK
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, setDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
+    // ✅ Your Firebase Config
     const firebaseConfig = {
-      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
-      authDomain: "izuchukwu-foods.firebaseapp.com",
-      projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
-      messagingSenderId: "811147638426",
-      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+      apiKey: 'AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk',
+      authDomain: 'izuchukwu-foods.firebaseapp.com',
+      projectId: 'izuchukwu-foods',
+      storageBucket: 'izuchukwu-foods.appspot.com',
+      messagingSenderId: '811147638426',
+      appId: '1:811147638426:web:f2403b6cf7e0b6f19b1123'
     };
 
     const app = initializeApp(firebaseConfig);
@@ -24,35 +26,39 @@
     const db = getFirestore(app);
 
     window.addEventListener("DOMContentLoaded", () => {
-      const loginBtn = document.getElementById("loginBtn");
-      const signupBtn = document.getElementById("signupBtn");
       const emailInput = document.getElementById("email");
       const passwordInput = document.getElementById("password");
       const usernameInput = document.getElementById("username");
+      const loginBtn = document.getElementById("loginBtn");
+      const signupBtn = document.getElementById("signupBtn");
       const message = document.getElementById("authMessage");
 
       loginBtn.onclick = async () => {
         try {
-          await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+          const email = emailInput.value;
+          const password = passwordInput.value;
+          await signInWithEmailAndPassword(auth, email, password);
           window.location.href = "dashboard.html";
-        } catch (error) {
-          message.textContent = error.message;
+        } catch (err) {
+          message.innerText = err.message;
         }
       };
 
       signupBtn.onclick = async () => {
         try {
-          const result = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-          const user = result.user;
-          await setDoc(doc(db, "users", user.uid), {
-            email: user.email,
-            username: usernameInput.value || "Anonymous",
+          const email = emailInput.value;
+          const password = passwordInput.value;
+          const username = usernameInput.value || "Anonymous";
+          const userCred = await createUserWithEmailAndPassword(auth, email, password);
+          await setDoc(doc(db, "users", userCred.user.uid), {
+            email,
+            username,
             role: "user",
             createdAt: serverTimestamp()
           });
           window.location.href = "dashboard.html";
-        } catch (error) {
-          message.textContent = error.message;
+        } catch (err) {
+          message.innerText = err.message;
         }
       };
     });
@@ -62,9 +68,10 @@
   <div class="auth-container">
     <h1>DavintoHQ</h1>
     <div class="form">
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <input type="text" id="username" placeholder="Username (for signup)" />
+      <input type="email" id="email" placeholder="Email" required />
+      <input type="password" id="password" placeholder="Password" required />
+      <input type="text" id="username" placeholder="Username (for sign-up only)" />
+
       <button id="loginBtn">Login</button>
       <button id="signupBtn">Sign Up</button>
       <p id="authMessage" style="color: red;"></p>

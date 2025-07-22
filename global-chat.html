@@ -1,33 +1,39 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Global Chat - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.css" />
 </head>
-<body class="bg-gray-100 min-h-screen flex">
-  <div id="sidebar"></div>  <main class="flex-1 flex flex-col max-w-4xl mx-auto p-4">
-    <h1 class="text-xl font-bold text-blue-700 mb-4">🌐 Global Chat</h1><div id="chatBox" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
+<body class="bg-gray-100 flex min-h-screen">
+  <div id="sidebar"></div>
 
-<div class="flex items-center gap-2">
-  <input id="messageInput" type="text" placeholder="Type a message..." class="flex-1 p-2 border rounded" />
-  <button id="emojiBtn" class="text-xl">😊</button>
-  <input type="file" id="mediaInput" class="hidden" accept="image/*,video/*" />
-  <button id="uploadMediaBtn" class="bg-gray-300 px-2 py-1 rounded">📎</button>
-  <button id="sendBtn" class="bg-blue-500 text-white px-4 py-1 rounded">Send</button>
-</div>
-<emoji-picker id="emojiPicker" class="absolute bottom-20 right-10 hidden"></emoji-picker>
+  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-600 mb-2">🌐 Global Chat</h1>
+    <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 p-2 bg-white rounded shadow-inner"></div>
 
-  </main>  <script type="module">
+    <form id="chatForm" class="mt-2 flex gap-2">
+      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border rounded" />
+      <input id="mediaInput" type="file" accept="image/*,video/*" class="hidden" />
+      <button type="button" id="emojiBtn" class="bg-yellow-200 px-3 rounded">😊</button>
+      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
+    </form>
+    <emoji-picker style="display:none;" id="emojiPicker"></emoji-picker>
+  </main>
+
+  <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import {
-      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc
+      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
     import {
       getAuth, onAuthStateChanged
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+    import {
+      getStorage, ref, uploadBytes, getDownloadURL
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -44,81 +50,74 @@
     const storage = getStorage();
 
     const chatBox = document.getElementById("chatBox");
+    const chatForm = document.getElementById("chatForm");
     const messageInput = document.getElementById("messageInput");
-    const sendBtn = document.getElementById("sendBtn");
-    const emojiPicker = document.getElementById("emojiPicker");
-    const emojiBtn = document.getElementById("emojiBtn");
     const mediaInput = document.getElementById("mediaInput");
-    const uploadMediaBtn = document.getElementById("uploadMediaBtn");
+    const emojiBtn = document.getElementById("emojiBtn");
+    const emojiPicker = document.getElementById("emojiPicker");
 
-    let currentUser = null;
+    let currentUser;
 
     onAuthStateChanged(auth, user => {
       if (!user) return location.href = "index.html";
       currentUser = user;
 
-      const q = query(collection(db, "globalMessages"), orderBy("timestamp"));
-      onSnapshot(q, snap => {
+      const q = query(collection(db, "globalChats"), orderBy("timestamp"));
+      onSnapshot(q, snapshot => {
         chatBox.innerHTML = "";
-        snap.forEach(doc => {
+        snapshot.forEach(doc => {
           const msg = doc.data();
+          const isSelf = msg.uid === user.uid;
           const div = document.createElement("div");
-          div.className = `p-2 rounded shadow bg-white ${msg.uid === user.uid ? 'text-right bg-blue-50' : ''}`;
+          div.className = `p-2 rounded max-w-xl ${isSelf ? 'bg-blue-100 ml-auto' : 'bg-gray-100'}`;
           div.innerHTML = `
-            <p class="text-sm text-gray-600">${msg.name || 'Anonymous'} · ${msg.timestamp?.toDate().toLocaleString() || ''}</p>
-            ${msg.mediaURL ? `<img src="${msg.mediaURL}" class="w-40 rounded mt-1" />` : ''}
-            <p class="text-base">${msg.text || ''}</p>
-            ${msg.uid === user.uid ? `<button onclick="deleteMessage('${doc.id}')" class="text-xs text-red-500">Delete</button>` : ''}
+            <div class="text-sm font-semibold text-gray-700">${msg.username || 'Anonymous'}</div>
+            ${msg.text ? `<div class="text-base text-black">${msg.text}</div>` : ""}
+            ${msg.mediaUrl ? `<img src="${msg.mediaUrl}" class="w-48 mt-2 rounded" />` : ""}
+            <div class="text-xs text-gray-400 mt-1">${msg.timestamp?.toDate().toLocaleString()}</div>
           `;
           chatBox.appendChild(div);
-          chatBox.scrollTop = chatBox.scrollHeight;
         });
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
     });
 
-    sendBtn.onclick = async () => {
+    chatForm.addEventListener("submit", async e => {
+      e.preventDefault();
       const text = messageInput.value.trim();
-      if (!text) return;
-      await addDoc(collection(db, "globalMessages"), {
-        text,
-        uid: currentUser.uid,
-        name: currentUser.displayName || currentUser.email || "User",
-        timestamp: serverTimestamp()
-      });
-      messageInput.value = "";
-    };
-
-    uploadMediaBtn.onclick = () => mediaInput.click();
-
-    mediaInput.onchange = async () => {
       const file = mediaInput.files[0];
-      if (!file) return;
-      const storageRef = ref(storage, `globalMedia/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const mediaURL = await getDownloadURL(storageRef);
+      let mediaUrl = "";
 
-      await addDoc(collection(db, "globalMessages"), {
-        mediaURL,
+      if (!text && !file) return;
+
+      if (file) {
+        const fileRef = ref(storage, `chatMedia/${Date.now()}_${file.name}`);
+        await uploadBytes(fileRef, file);
+        mediaUrl = await getDownloadURL(fileRef);
+      }
+
+      await addDoc(collection(db, "globalChats"), {
         uid: currentUser.uid,
-        name: currentUser.displayName || currentUser.email || "User",
+        username: currentUser.email,
+        text,
+        mediaUrl,
         timestamp: serverTimestamp()
       });
-    };
 
-    emojiBtn.onclick = () => {
-      emojiPicker.classList.toggle("hidden");
-    };
+      messageInput.value = "";
+      mediaInput.value = "";
+    });
 
-    emojiPicker.addEventListener('emoji-click', e => {
+    emojiBtn.addEventListener("click", () => {
+      emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";
+    });
+
+    emojiPicker.addEventListener("emoji-click", e => {
       messageInput.value += e.detail.unicode;
     });
 
-    window.deleteMessage = async (id) => {
-      if (confirm("Delete this message?")) {
-        await deleteDoc(doc(db, "globalMessages", id));
-      }
-    };
-
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1"></script></body>
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.js" type="module"></script>
+</body>
 </html>

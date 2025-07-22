@@ -4,144 +4,94 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";const firebaseConfig = {
-  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-  authDomain: "davintohq.firebaseapp.com",
-  projectId: "davintohq",
-  storageBucket: "davintohq.firebasestorage.app",
-  messagingSenderId: "156992522736",
-  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-  measurementId: "G-3GXFN90T6S"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-const userDisplay = document.getElementById("userDisplay");
-const logoutBtn = document.getElementById("logoutBtn");
-
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    const docRef = doc(db, "users", user.uid);
-    const docSnap = await getDoc(docRef);
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      userDisplay.innerText = `Welcome, ${data.username}`;
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f9;
+      margin: 0;
+      padding: 0;
     }
-  } else {
-    window.location.href = "index.html";
-  }
-});
-
-logoutBtn.onclick = async () => {
-  await signOut(auth);
-  window.location.href = "index.html";
-};
-
-  </script>
+    header {
+      background: #4f46e5;
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      padding: 2rem;
+    }
+    .dashboard-button {
+      background: #4f46e5;
+      color: white;
+      padding: 1.5rem;
+      border-radius: 10px;
+      text-align: center;
+      text-decoration: none;
+      font-size: 1.1rem;
+      font-weight: bold;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: background 0.3s;
+    }
+    .dashboard-button:hover {
+      background: #4338ca;
+    }
+  </style>
 </head>
 <body>
   <header>
-    <h1>DavintoHQ</h1>
-    <p id="userDisplay">Welcome</p>
-    <button id="logoutBtn">Logout</button>
-  </header>  <main>
-    <section class="dashboard-grid"><!-- Top Priority Features -->
-  <h2 class="section-heading">🔥 OnTop Features</h2>
-  <div class="card"><h2>📢 Announcements</h2><a href="announcements.html">View Announcements</a></div>
-  <div class="card"><h2>💬 Global Chat</h2><a href="global-chat.html">Join Chat</a></div>
-  <div class="card"><h2>🤝 Referrals & Earnings</h2><a href="referrals.html">My Referrals</a></div>
-  <div class="card"><h2>👥 Private Messages</h2><a href="private-chat.html">Open Chat</a></div>
-  <div class="card"><h2>👤 My Profile</h2><a href="profile.html">View Profile</a></div>
-  <div class="card"><h2>📈 Site Overview</h2><p>Total Users: <span id="totalUsers">Loading...</span></p></div>
+    <h1>DavintoHQ Dashboard</h1>
+  </header>
+  <main class="container">
+    <a href="global-chat.html" class="dashboard-button">🌍 Global Chat</a>
+    <a href="private-chat.html" class="dashboard-button">💬 Private Messages</a>
+    <a href="announcements.html" class="dashboard-button">📢 Announcements</a>
+    <a href="files.html" class="dashboard-button">📁 File Sharing</a>
+    <a href="blog.html" class="dashboard-button">📝 Blog</a>
+    <a href="referrals.html" class="dashboard-button">🤝 Referrals (10% Commissions)</a>
+    <a href="search.html" class="dashboard-button">🔍 Global User Search</a>
+    <div id="adminPanelBtn" style="display:none">
+      <a href="admin.html" class="dashboard-button">🔧 Admin Panel</a>
+    </div>
+  </main>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-  <!-- Communication & Social -->
-  <h2 class="section-heading">💬 Communication & Social</h2>
-  <div class="card"><h2>❤️ Social Feed</h2><a href="feed.html">View Feed</a></div>
-  <div class="card"><h2>🎥 Stories</h2><a href="stories.html">View Stories</a></div>
-  <div class="card"><h2>⏳ Status</h2><a href="status.html">Post Status</a></div>
-  <div class="card"><h2>📨 Notifications</h2><a href="notifications.html">Open Notifications</a></div>
-  <div class="card"><h2>💌 Invitations</h2><a href="invites.html">Send/Receive Invites</a></div>
-  <div class="card"><h2>🔍 Global Search</h2><a href="search.html">Search Users</a></div>
-  <div class="card"><h2>📣 Polls</h2><a href="polls.html">Vote Now</a></div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
 
-  <!-- Company Tools -->
-  <h2 class="section-heading">🏢 Company Tools</h2>
-  <div class="card"><h2>🏢 Teams</h2><a href="teams.html">Company Teams</a></div>
-  <div class="card"><h2>💼 Projects</h2><a href="projects.html">Project Board</a></div>
-  <div class="card"><h2>📅 Events</h2><a href="events.html">Upcoming Events</a></div>
-  <div class="card"><h2>⚙️ Settings</h2><a href="settings.html">Account Settings</a></div>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-  <!-- Media -->
-  <h2 class="section-heading">📸 Media & Uploads</h2>
-  <div class="card"><h2>📂 Files</h2><a href="files.html">View Files</a></div>
-  <div class="card"><h2>📁 My Uploads</h2><a href="my-uploads.html">My Media</a></div>
-  <div class="card"><h2>📸 Media Upload</h2><a href="media-upload.html">Upload Photos & Videos</a></div>
-  <div class="card"><h2>🛒 Marketplace</h2><a href="marketplace.html">Explore Items</a></div>
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const email = user.email;
+        const uid = user.uid;
 
-  <!-- Blogging -->
-  <h2 class="section-heading">📝 Blogging</h2>
-  <div class="card"><h2>📝 Blog</h2><a href="blog.html">View Posts</a></div>
-  <div class="card"><h2>➕ Create Blog</h2><a href="add-blog.html">Add New Post</a></div>
+        if (email === "macdinodavinto@gmail.com") {
+          document.getElementById("adminPanelBtn").style.display = "block";
+          return;
+        }
 
-  <!-- Fun & People -->
-  <h2 class="section-heading">🎉 Fun & Friends</h2>
-  <div class="card"><h2>🤝 Friends</h2><a href="friends.html">Manage Friends</a></div>
-  <div class="card"><h2>🎮 Games</h2><a href="games.html">Play Games</a></div>
-  <div class="card"><h2>🎙️ Voice Chat</h2><a href="voice-chat.html">Join Voice</a></div>
-  <div class="card"><h2>📹 Video Chat</h2><a href="video-chat.html">Start Video</a></div>
-
-</section>
-
-  </main>  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      background: #f8f9fa;
-    }
-    header {
-      background: #333;
-      color: white;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .dashboard-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      padding: 1rem;
-    }
-    .section-heading {
-      grid-column: 1 / -1;
-      font-size: 1.5rem;
-      margin-top: 2rem;
-      color: #444;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 0.5rem;
-    }
-    .card {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: 0.3s ease;
-    }
-    .card:hover {
-      transform: translateY(-4px);
-    }
-    button {
-      background: crimson;
-      border: none;
-      color: white;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-  </style></body>
+        const userRef = doc(db, "users", uid);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const role = userSnap.data().role;
+          if (role === "admin" || role === "owner") {
+            document.getElementById("adminPanelBtn").style.display = "block";
+          }
+        }
+      }
+    });
+  </script></body>
 </html>

@@ -1,67 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Files - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
+  <div id="sidebar"></div>  <main class="flex-1 p-6">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">📁 Uploaded Files</h1><div class="mb-4">
+  <input type="text" id="searchInput" placeholder="Search files..." class="border p-2 rounded w-full max-w-md" />
+</div>
 
-  <main class="flex-1 p-6 max-w-5xl mx-auto space-y-6">
-    <h1 class="text-2xl font-bold text-blue-700 mb-2">📁 Files</h1>
+<div id="fileList" class="space-y-4"></div>
 
-    <!-- Upload Section -->
-    <div class="bg-white shadow rounded p-4 space-y-4">
-      <h2 class="text-xl font-semibold">Upload a File</h2>
-      <input type="file" id="fileInput" class="block" />
-      <select id="categoryInput" class="border p-2 rounded w-full">
-        <option value="">Select category</option>
-        <option>Documents</option>
-        <option>Reports</option>
-        <option>Images</option>
-        <option>Other</option>
-      </select>
-      <input type="text" id="tagsInput" placeholder="Tags (comma separated)" class="border p-2 rounded w-full"/>
-      <button id="uploadBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Upload</button>
-      <p id="uploadStatus" class="text-sm text-green-600 hidden">✅ Upload complete</p>
-    </div>
-
-    <!-- File List Section -->
-    <div class="bg-white shadow rounded p-4">
-      <div class="flex items-center justify-between mb-4">
-        <input id="searchInput" type="text" placeholder="Search files..." class="border p-2 rounded w-1/2" />
-        <div>
-          <button id="exportCSV" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded mr-2">Export CSV</button>
-          <button id="exportPDF" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">Export PDF</button>
-        </div>
-      </div>
-      <div class="overflow-auto">
-        <table class="min-w-full text-left text-sm">
-          <thead>
-            <tr class="bg-gray-200">
-              <th class="p-2">Name</th>
-              <th class="p-2">Category</th>
-              <th class="p-2">Tags</th>
-              <th class="p-2">Uploaded By</th>
-              <th class="p-2">Date</th>
-              <th class="p-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="fileList"></tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <script type="module">
+  </main>  <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { loadSidebar } from './sidebar.js';
-    import { logActivity } from './log-utils.js';
+    import {
+      getFirestore, collection, getDocs, doc, updateDoc, increment, addDoc, query, orderBy, onSnapshot
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import {
+      getAuth, onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -74,129 +33,71 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore();
-    const storage = getStorage();
     const auth = getAuth();
 
-    const fileInput = document.getElementById("fileInput");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const categoryInput = document.getElementById("categoryInput");
-    const tagsInput = document.getElementById("tagsInput");
-    const uploadStatus = document.getElementById("uploadStatus");
-    const searchInput = document.getElementById("searchInput");
     const fileList = document.getElementById("fileList");
-    const exportCSV = document.getElementById("exportCSV");
-    const exportPDF = document.getElementById("exportPDF");
+    const searchInput = document.getElementById("searchInput");
 
-    let currentUser;
+    const renderFile = (file, id) => {
+      const div = document.createElement("div");
+      div.className = "bg-white p-4 rounded shadow flex items-center justify-between";
 
-    const renderFiles = (files) => {
-      const search = searchInput.value.toLowerCase();
-      fileList.innerHTML = "";
-      files
-        .filter(f => f.name.toLowerCase().includes(search))
-        .forEach(file => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td class="p-2 underline text-blue-600"><a href="${file.url}" target="_blank">${file.name}</a></td>
-            <td class="p-2">${file.category || ''}</td>
-            <td class="p-2">${file.tags?.join(", ") || ''}</td>
-            <td class="p-2">${file.uploader || ''}</td>
-            <td class="p-2">${new Date(file.timestamp).toLocaleString()}</td>
-            <td class="p-2">
-              <button data-id="${file.id}" class="deleteBtn text-red-600 hover:underline">Delete</button>
-            </td>
-          `;
-          fileList.appendChild(tr);
+      let icon = "📄";
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (["png", "jpg", "jpeg", "gif", "webp"].includes(ext)) {
+        icon = `<img src="${file.url}" alt="img" class="w-12 h-12 rounded object-cover" />`;
+      } else if (ext === "pdf") icon = "📕";
+      else if (["zip", "rar"].includes(ext)) icon = "🗜️";
+      else if (["doc", "docx"].includes(ext)) icon = "📘";
+
+      div.innerHTML = `
+        <div class="flex items-center space-x-4">
+          <div>${icon}</div>
+          <div>
+            <p class="font-semibold">${file.name}</p>
+            <p class="text-sm text-gray-500">${file.category || 'No category'} - ${file.tags?.join(', ') || 'No tags'}</p>
+            <p class="text-xs text-gray-400">Uploaded by: ${file.uploaderName || 'Unknown'}</p>
+            <p class="text-xs text-gray-400">Downloads: ${file.downloads || 0}</p>
+          </div>
+        </div>
+        <button class="bg-blue-600 text-white px-3 py-1 rounded" data-url="${file.url}" data-id="${id}">Download</button>
+      `;
+
+      const btn = div.querySelector("button");
+      btn.onclick = async () => {
+        window.open(file.url, '_blank');
+        const fileRef = doc(db, "uploadedFiles", id);
+        await updateDoc(fileRef, { downloads: increment(1) });
+        await addDoc(collection(fileRef, "downloads"), {
+          timestamp: Date.now(),
+          user: auth.currentUser?.uid || 'anonymous'
         });
+      };
+
+      return div;
     };
 
     const loadFiles = async () => {
-      const snap = await getDocs(collection(db, "uploadedFiles"));
+      const snap = await getDocs(query(collection(db, "uploadedFiles"), orderBy("timestamp", "desc")));
       const files = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       renderFiles(files);
     };
 
-    const uploadFile = async () => {
-      const file = fileInput.files[0];
-      const category = categoryInput.value;
-      const tags = tagsInput.value.split(',').map(t => t.trim()).filter(Boolean);
-
-      if (!file || !category) return alert("File and category are required.");
-
-      const storageRef = ref(storage, `uploads/${Date.now()}_${file.name}`);
-      await uploadBytes(storageRef, file);
-      const downloadURL = await getDownloadURL(storageRef);
-
-      await addDoc(collection(db, "uploadedFiles"), {
-        name: file.name,
-        url: downloadURL,
-        category,
-        tags,
-        uploader: currentUser?.email || currentUser?.phoneNumber || 'Unknown',
-        timestamp: Date.now()
+    const renderFiles = (files) => {
+      fileList.innerHTML = "";
+      const keyword = searchInput.value.toLowerCase();
+      files.filter(file => file.name.toLowerCase().includes(keyword)).forEach(file => {
+        fileList.appendChild(renderFile(file, file.id));
       });
-
-      await logActivity("Uploaded file", { file: file.name, category });
-
-      uploadStatus.classList.remove("hidden");
-      setTimeout(() => uploadStatus.classList.add("hidden"), 3000);
-      fileInput.value = "";
-      tagsInput.value = "";
-      categoryInput.value = "";
-      loadFiles();
     };
 
-    const deleteFile = async (id) => {
-      const confirmed = confirm("Delete this file?");
-      if (!confirmed) return;
-      await deleteDoc(doc(db, "uploadedFiles", id));
-      await logActivity("Deleted file", { fileId: id });
-      loadFiles();
-    };
-
-    uploadBtn.onclick = uploadFile;
-    searchInput.oninput = loadFiles;
-
-    fileList.addEventListener("click", e => {
-      if (e.target.classList.contains("deleteBtn")) {
-        const id = e.target.dataset.id;
-        deleteFile(id);
-      }
-    });
-
-    exportCSV.onclick = async () => {
-      const snap = await getDocs(collection(db, "uploadedFiles"));
-      const files = snap.docs.map(doc => doc.data());
-      const csv = files.map(f =>
-        `"${f.name}","${f.category}","${f.tags?.join(';') || ''}","${f.uploader}","${new Date(f.timestamp).toLocaleString()}"`
-      ).join("\n");
-      const blob = new Blob(["Name,Category,Tags,Uploader,Date\n" + csv], { type: "text/csv" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "files.csv";
-      a.click();
-    };
-
-    exportPDF.onclick = async () => {
-      const snap = await getDocs(collection(db, "uploadedFiles"));
-      const files = snap.docs.map(doc => doc.data());
-      let content = "Files List:\n\n" + files.map(f =>
-        `${f.name} - ${f.category} - ${f.uploader} - ${new Date(f.timestamp).toLocaleString()}`
-      ).join("\n");
-      const blob = new Blob([content], { type: "application/pdf" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "files.pdf";
-      a.click();
-    };
+    searchInput.addEventListener("input", loadFiles);
 
     onAuthStateChanged(auth, user => {
       if (!user) return location.href = "index.html";
-      currentUser = user;
       loadFiles();
     });
 
-    loadSidebar();
-  </script>
-</body>
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script></body>
 </html>

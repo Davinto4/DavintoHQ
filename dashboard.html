@@ -5,37 +5,76 @@
   <title>Dashboard - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
+<body class="bg-gray-100 min-h-screen flex">
   <div id="sidebar"></div>  <main class="flex-1 p-6">
-    <h1 class="text-3xl font-bold mb-4 text-blue-700">Welcome to DavintoHQ</h1><section class="bg-white p-4 rounded shadow mb-6">
-  <h2 class="text-xl font-semibold mb-2">📢 Announcements</h2>
-  <p>View the latest updates and alerts for everyone at DavintoHQ.</p>
-  <a href="announcements.html" class="text-blue-600 underline">Go to Announcements</a>
-</section>
+    <h1 class="text-3xl font-bold text-blue-700 mb-6">📊 Dashboard</h1><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
-<section class="bg-white p-4 rounded shadow mb-6">
-  <h2 class="text-xl font-semibold mb-2">📂 Files & Resources</h2>
-  <p>Access shared documents and resources here.</p>
-  <a href="files.html" class="text-blue-600 underline">Go to Files</a>
-</section>
+  <a href="blog.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">📚 Blog</h2>
+    <p class="text-sm text-gray-500">Read published blog articles</p>
+  </a>
 
-<section class="bg-white p-4 rounded shadow mb-6">
-  <h2 class="text-xl font-semibold mb-2">💬 Global Chat</h2>
-  <div id="chatMessages" class="h-60 overflow-y-auto border p-2 rounded bg-gray-50 mb-2"></div>
-  <div class="flex gap-2">
-    <input type="text" id="chatInput" class="flex-1 border px-2 py-1 rounded" placeholder="Type a message...">
-    <button id="sendChat" class="bg-blue-600 text-white px-4 py-1 rounded">Send</button>
-  </div>
-</section>
+  <a href="add-blog.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">✍️ Add Blog</h2>
+    <p class="text-sm text-gray-500">Create or edit blog posts</p>
+  </a>
+
+  <a href="manage-admins.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">🛡️ Manage Admins</h2>
+    <p class="text-sm text-gray-500">Owner control panel for admins</p>
+  </a>
+
+  <a href="announcements.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">📢 Announcements</h2>
+    <p class="text-sm text-gray-500">Latest updates and notices</p>
+  </a>
+
+  <a href="files.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">📁 Files</h2>
+    <p class="text-sm text-gray-500">Upload and browse shared files</p>
+  </a>
+
+  <a href="private-chat.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">💬 Private Chat</h2>
+    <p class="text-sm text-gray-500">Message users one-on-one</p>
+  </a>
+
+  <a href="global-chat.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">🌍 Global Chat</h2>
+    <p class="text-sm text-gray-500">Team-wide discussions</p>
+  </a>
+
+  <a href="search.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">🔍 Global Search</h2>
+    <p class="text-sm text-gray-500">Find users & profiles</p>
+  </a>
+
+  <a href="profile.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">👤 My Profile</h2>
+    <p class="text-sm text-gray-500">View and edit your details</p>
+  </a>
+
+  <a id="adminLink" href="admin.html" class="hidden bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">⚙️ Admin Panel</h2>
+    <p class="text-sm text-gray-500">Admin-only access</p>
+  </a>
+
+  <a href="settings.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">⚙️ Settings</h2>
+    <p class="text-sm text-gray-500">Customize your experience</p>
+  </a>
+
+  <a href="reports.html" class="bg-white shadow rounded-xl p-5 hover:bg-blue-50">
+    <h2 class="text-lg font-semibold">📈 Reports</h2>
+    <p class="text-sm text-gray-500">View usage & activity data</p>
+  </a>
+
+</div>
 
   </main>  <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import {
-      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import {
-      getAuth, onAuthStateChanged
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -47,43 +86,18 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
     const auth = getAuth();
+    const db = getFirestore();
 
-    const chatMessages = document.getElementById("chatMessages");
-    const chatInput = document.getElementById("chatInput");
-    const sendChat = document.getElementById("sendChat");
-
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       if (!user) return location.href = "index.html";
-
-      sendChat.onclick = async () => {
-        const text = chatInput.value.trim();
-        if (!text) return;
-        await addDoc(collection(db, "globalChats"), {
-          uid: user.uid,
-          text,
-          displayName: user.displayName || "Anonymous",
-          timestamp: serverTimestamp()
-        });
-        chatInput.value = "";
-      };
-
-      const chatQuery = query(collection(db, "globalChats"), orderBy("timestamp"));
-      onSnapshot(chatQuery, snapshot => {
-        chatMessages.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const div = document.createElement("div");
-          div.className = "mb-2";
-          div.innerHTML = `
-            <p><strong>${data.displayName}</strong> <span class="text-xs text-gray-500">${data.timestamp?.toDate().toLocaleString() || ""}</span></p>
-            <p class="ml-2">${data.text}</p>
-          `;
-          chatMessages.appendChild(div);
-        });
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      });
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.data();
+      const role = data?.role;
+      if (role === "admin" || role === "owner") {
+        document.getElementById("adminLink").classList.remove("hidden");
+      }
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());

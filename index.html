@@ -2,135 +2,109 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ Login</title>
+  <title>DavintoHQ - Login / Signup</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md">
-    <h2 class="text-2xl font-bold text-center mb-6">Welcome to <span class="text-indigo-600">DavintoHQ</span></h2>
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
 
-    <!-- Email Login -->
-    <div class="mb-4">
-      <input id="email" type="email" placeholder="Email" class="w-full border px-4 py-2 rounded mb-2" />
-      <input id="password" type="password" placeholder="Password" class="w-full border px-4 py-2 rounded" />
-      <button onclick="emailLogin()" class="w-full bg-indigo-600 text-white py-2 rounded mt-2">Login with Email</button>
-      <button onclick="emailSignup()" class="w-full bg-gray-300 text-black py-2 rounded mt-1">Sign up</button>
+  <div class="bg-white p-8 rounded shadow max-w-md w-full">
+    <h1 class="text-2xl font-bold mb-6 text-center">Welcome to DavintoHQ</h1>
+
+    <div class="mb-6 flex justify-center gap-4">
+      <button id="showLogin" class="px-4 py-2 border rounded bg-blue-600 text-white">Login</button>
+      <button id="showSignup" class="px-4 py-2 border rounded">Sign Up</button>
     </div>
 
-    <!-- Divider -->
-    <div class="text-center text-gray-500 my-4">OR</div>
+    <form id="authForm" class="space-y-4">
+      <input id="email" type="email" placeholder="Email" class="w-full border px-3 py-2 rounded" required />
+      <input id="password" type="password" placeholder="Password" class="w-full border px-3 py-2 rounded" required />
+      <button type="submit" id="submitBtn" class="w-full bg-blue-600 text-white py-2 rounded">Login</button>
+    </form>
 
-    <!-- Phone Login -->
-    <div class="mb-4">
-      <input id="phone" type="tel" placeholder="+234XXXXXXXXXX" class="w-full border px-4 py-2 rounded mb-2" />
-      <div id="recaptcha-container"></div>
-      <button onclick="sendOTP()" class="w-full bg-green-600 text-white py-2 rounded">Send OTP</button>
-      <input id="otp" type="text" placeholder="Enter OTP" class="w-full border px-4 py-2 rounded mt-2" />
-      <button onclick="verifyOTP()" class="w-full bg-green-700 text-white py-2 rounded mt-1">Verify</button>
-    </div>
-
-    <!-- Google Login -->
-    <div class="text-center mb-2">
-      <button onclick="googleLogin()" class="w-full bg-red-500 text-white py-2 rounded">Login with Google</button>
-    </div>
+    <p id="message" class="mt-4 text-center text-red-600"></p>
   </div>
 
-  <!-- Firebase SDKs -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getAuth,
       signInWithEmailAndPassword,
       createUserWithEmailAndPassword,
-      signInWithPhoneNumber,
-      RecaptchaVerifier,
-      signInWithPopup,
-      GoogleAuthProvider
+      onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
-      storageBucket: "davintohq.firebasestorage.app",
+      storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
       measurementId: "G-3GXFN90T6S"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth();
-    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const ownerEmail = "macdinodavinto@gmail.com";
-    const ownerPhone = "+2348169045105";
+    const form = document.getElementById("authForm");
+    const emailInput = document.getElementById("email");
+    const passwordInput = document.getElementById("password");
+    const submitBtn = document.getElementById("submitBtn");
+    const messageP = document.getElementById("message");
+    const showLoginBtn = document.getElementById("showLogin");
+    const showSignupBtn = document.getElementById("showSignup");
 
-    // Setup Recaptcha
-    window.recaptchaVerifier = new RecaptchaVerifier('recaptcha-container', {
-      size: 'invisible',
-      callback: () => sendOTP()
-    }, auth);
+    let isLogin = true;
 
-    const emailLogin = () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      signInWithEmailAndPassword(auth, email, password)
-        .then(res => handleSuccess(res.user))
-        .catch(err => alert(err.message));
+    showLoginBtn.onclick = () => {
+      isLogin = true;
+      submitBtn.textContent = "Login";
+      messageP.textContent = "";
+      showLoginBtn.classList.add("bg-blue-600", "text-white");
+      showSignupBtn.classList.remove("bg-blue-600", "text-white");
     };
 
-    const emailSignup = () => {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
-      createUserWithEmailAndPassword(auth, email, password)
-        .then(res => handleSuccess(res.user))
-        .catch(err => alert(err.message));
+    showSignupBtn.onclick = () => {
+      isLogin = false;
+      submitBtn.textContent = "Sign Up";
+      messageP.textContent = "";
+      showSignupBtn.classList.add("bg-blue-600", "text-white");
+      showLoginBtn.classList.remove("bg-blue-600", "text-white");
     };
 
-    const sendOTP = () => {
-      const phone = document.getElementById('phone').value;
-      const appVerifier = window.recaptchaVerifier;
-      signInWithPhoneNumber(auth, phone, appVerifier)
-        .then(confirmResult => {
-          window.confirmationResult = confirmResult;
-          alert("OTP sent!");
-        })
-        .catch(err => alert(err.message));
-    };
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      messageP.textContent = "";
+      const email = emailInput.value.trim();
+      const password = passwordInput.value.trim();
 
-    const verifyOTP = () => {
-      const code = document.getElementById('otp').value;
-      window.confirmationResult.confirm(code)
-        .then(res => handleSuccess(res.user))
-        .catch(err => alert("Invalid OTP: " + err.message));
-    };
+      if (!email || !password) {
+        messageP.textContent = "Please enter email and password.";
+        return;
+      }
 
-    const googleLogin = () => {
-      const provider = new GoogleAuthProvider();
-      signInWithPopup(auth, provider)
-        .then(res => handleSuccess(res.user))
-        .catch(err => alert(err.message));
-    };
+      try {
+        if (isLogin) {
+          await signInWithEmailAndPassword(auth, email, password);
+          // Redirect after successful login
+          location.href = "dashboard.html"; // Change to your dashboard page
+        } else {
+          await createUserWithEmailAndPassword(auth, email, password);
+          // Redirect after signup
+          location.href = "dashboard.html";
+        }
+      } catch (error) {
+        messageP.textContent = error.message;
+      }
+    });
 
-    const handleSuccess = async (user) => {
-      const isOwner = (user.email === ownerEmail || user.phoneNumber === ownerPhone);
-      const profileRef = doc(db, "users", user.uid);
-      await setDoc(profileRef, {
-        uid: user.uid,
-        email: user.email || null,
-        phone: user.phoneNumber || null,
-        isOwner: isOwner,
-        timestamp: Date.now()
-      }, { merge: true });
-
-      window.location.href = "chat.html";
-    };
+    // Auto redirect if already logged in
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        location.href = "dashboard.html";
+      }
+    });
   </script>
 </body>
-  </html>
+</html>

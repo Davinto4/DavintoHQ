@@ -1,80 +1,130 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <title>Settings - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Settings - DavintoHQ</title>
+  <link rel="stylesheet" href="../styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root[data-theme='dark'] {
+      --bg: #121212;
+      --text: #f5f5f5;
+      --card: #1e1e1e;
+    }
+    :root[data-theme='light'] {
+      --bg: #f4f4f4;
+      --text: #333;
+      --card: #ffffff;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 2rem;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+    h1 {
+      text-align: center;
+    }
+    .settings-container {
+      max-width: 700px;
+      margin: auto;
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .setting-option {
+      margin-bottom: 1.5rem;
+    }
+    .setting-option label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    .setting-option input, .setting-option select {
+      width: 100%;
+      padding: 0.5rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .btn-save {
+      background: crimson;
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #themeToggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #444;
+      color: white;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
-  <main class="flex-1 p-6 max-w-3xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6 text-blue-700">⚙️ Platform Settings</h1>
+<body>
+  <button id="themeToggle"><i class="fas fa-adjust"></i> Theme</button>
+  <h1><i class="fas fa-cog"></i> Settings</h1>  <div class="settings-container">
+    <div class="setting-option">
+      <label for="username">Username</label>
+      <input type="text" id="username" placeholder="Enter your username" />
+    </div><div class="setting-option">
+  <label for="email">Email</label>
+  <input type="email" id="email" placeholder="Enter your email" />
+</div>
 
-    <div class="space-y-4">
-      <label class="block">
-        <span class="text-gray-700">Company Name</span>
-        <input id="companyNameInput" class="mt-1 block w-full p-2 border rounded" placeholder="DavintoHQ" />
-      </label>
+<div class="setting-option">
+  <label for="notifications">Notification Preferences</label>
+  <select id="notifications">
+    <option value="all">All Notifications</option>
+    <option value="important">Only Important</option>
+    <option value="none">None</option>
+  </select>
+</div>
 
-      <label class="flex items-center space-x-2">
-        <input id="chatToggle" type="checkbox" class="h-5 w-5 text-blue-600" />
-        <span>Enable Company Chat</span>
-      </label>
+<div class="setting-option">
+  <label for="language">Preferred Language</label>
+  <select id="language">
+    <option value="en">English</option>
+    <option value="es">Spanish</option>
+    <option value="fr">French</option>
+  </select>
+</div>
 
-      <button id="saveBtn" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded">💾 Save Settings</button>
-    </div>
-  </main>
+<div class="setting-option">
+  <label for="privacy">Privacy Settings</label>
+  <select id="privacy">
+    <option value="public">Public</option>
+    <option value="private">Private</option>
+    <option value="friends">Friends Only</option>
+  </select>
+</div>
 
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import { loadSidebar } from './sidebar.js';
+<div class="setting-option">
+  <label for="theme">App Theme</label>
+  <select id="theme">
+    <option value="light">Light</option>
+    <option value="dark">Dark</option>
+  </select>
+</div>
 
-    loadSidebar();
+<button class="btn-save">Save Settings</button>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
-
-    const companyNameInput = document.getElementById("companyNameInput");
-    const chatToggle = document.getElementById("chatToggle");
-    const saveBtn = document.getElementById("saveBtn");
-
-    async function loadSettings() {
-      const settingsDoc = await getDoc(doc(db, "platform", "settings"));
-      if (settingsDoc.exists()) {
-        const data = settingsDoc.data();
-        companyNameInput.value = data.companyName || "";
-        chatToggle.checked = data.chatEnabled || false;
-      }
+  </div>  <script>
+    document.getElementById("themeToggle").onclick = () => {
+      const root = document.documentElement;
+      const current = root.getAttribute('data-theme');
+      root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
     }
-
-    async function saveSettings() {
-      await setDoc(doc(db, "platform", "settings"), {
-        companyName: companyNameInput.value,
-        chatEnabled: chatToggle.checked
-      });
-      alert("Settings saved!");
-    }
-
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href = "index.html";
-      // Optional: check role from Firestore if needed
-      loadSettings();
-    });
-
-    saveBtn.onclick = saveSettings;
-  </script>
-</body>
+  </script></body>
 </html>

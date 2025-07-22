@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Chat - DavintoHQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.min.css" />
+</head>
+<body class="bg-gray-100 min-h-screen flex">
+  <div id="sidebar"></div>  <main class="flex-1 flex flex-col max-w-4xl mx-auto p-4">
+    <h1 class="text-xl font-bold text-blue-700 mb-4">🌐 Global Chat</h1><div id="chatBox" class="flex-1 overflow-y-auto space-y-2 mb-4"></div>
+
+<div class="flex items-center gap-2">
+  <input id="messageInput" type="text" placeholder="Type a message..." class="flex-1 p-2 border rounded" />
+  <button id="emojiBtn" class="text-xl">😊</button>
+  <input type="file" id="mediaInput" class="hidden" accept="image/*,video/*" />
+  <button id="uploadMediaBtn" class="bg-gray-300 px-2 py-1 rounded">📎</button>
+  <button id="sendBtn" class="bg-blue-500 text-white px-4 py-1 rounded">Send</button>
+</div>
+<emoji-picker id="emojiPicker" class="absolute bottom-20 right-10 hidden"></emoji-picker>
+
+  </main>  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import {
+      getAuth, onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+    import { getStorage, ref, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore();
+    const auth = getAuth();
+    const storage = getStorage();
+
+    const chatBox = document.getElementById("chatBox");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const emojiPicker = document.getElementById("emojiPicker");
+    const emojiBtn = document.getElementById("emojiBtn");
+    const mediaInput = document.getElementById("mediaInput");
+    const uploadMediaBtn = document.getElementById("uploadMediaBtn");
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, user => {
+      if (!user) return location.href = "index.html";
+      currentUser = user;
+
+      const q = query(collection(db, "globalMessages"), orderBy("timestamp"));
+      onSnapshot(q, snap => {
+        chatBox.innerHTML = "";
+        snap.forEach(doc => {
+          const msg = doc.data();
+          const div = document.createElement("div");
+          div.className = `p-2 rounded shadow bg-white ${msg.uid === user.uid ? 'text-right bg-blue-50' : ''}`;
+          div.innerHTML = `
+            <p class="text-sm text-gray-600">${msg.name || 'Anonymous'} · ${msg.timestamp?.toDate().toLocaleString() || ''}</p>
+            ${msg.mediaURL ? `<img src="${msg.mediaURL}" class="w-40 rounded mt-1" />` : ''}
+            <p class="text-base">${msg.text || ''}</p>
+            ${msg.uid === user.uid ? `<button onclick="deleteMessage('${doc.id}')" class="text-xs text-red-500">Delete</button>` : ''}
+          `;
+          chatBox.appendChild(div);
+          chatBox.scrollTop = chatBox.scrollHeight;
+        });
+      });
+    });
+
+    sendBtn.onclick = async () => {
+      const text = messageInput.value.trim();
+      if (!text) return;
+      await addDoc(collection(db, "globalMessages"), {
+        text,
+        uid: currentUser.uid,
+        name: currentUser.displayName || currentUser.email || "User",
+        timestamp: serverTimestamp()
+      });
+      messageInput.value = "";
+    };
+
+    uploadMediaBtn.onclick = () => mediaInput.click();
+
+    mediaInput.onchange = async () => {
+      const file = mediaInput.files[0];
+      if (!file) return;
+      const storageRef = ref(storage, `globalMedia/${Date.now()}_${file.name}`);
+      await uploadBytes(storageRef, file);
+      const mediaURL = await getDownloadURL(storageRef);
+
+      await addDoc(collection(db, "globalMessages"), {
+        mediaURL,
+        uid: currentUser.uid,
+        name: currentUser.displayName || currentUser.email || "User",
+        timestamp: serverTimestamp()
+      });
+    };
+
+    emojiBtn.onclick = () => {
+      emojiPicker.classList.toggle("hidden");
+    };
+
+    emojiPicker.addEventListener('emoji-click', e => {
+      messageInput.value += e.detail.unicode;
+    });
+
+    window.deleteMessage = async (id) => {
+      if (confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "globalMessages", id));
+      }
+    };
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1"></script></body>
+</html>

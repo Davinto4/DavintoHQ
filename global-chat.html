@@ -1,62 +1,79 @@
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import {
-    getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-  import {
-    getAuth, signInAnonymously, onAuthStateChanged, updateProfile
-  } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<!DOCTYPE html>
+<html data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <title>Global Chat</title>
+  <script src="https://kit.fontawesome.com/a2e0b5e6f5.js" crossorigin="anonymous"></script>
+  <style>
+    body { font-family: sans-serif; background: var(--bg); color: var(--text); margin: 0; }
+    .chat-box { height: 80vh; overflow-y: scroll; padding: 1em; border-bottom: 1px solid #ccc; }
+    .message { padding: 0.5em; margin: 0.5em 0; border-radius: 6px; background: #f2f2f2; }
+    .me { background: #d0ffe5; }
+    .actions button, .actions span { margin-right: 5px; cursor: pointer; }
+    input { width: 75%; padding: 0.5em; }
+    button { padding: 0.5em; }
+    [data-theme="dark"] { --bg: #111; --text: #fff; background: #111; color: #fff; }
+    [data-theme="light"] { --bg: #fff; --text: #000; }
+  </style>
+</head>
+<body>
+  <div class="chat-box" id="chatBox"></div>
+  <input id="chatMessage" placeholder="Type a message...">
+  <button id="sendBtn">Send</button>
+  <button id="themeToggle">🌓</button>
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-    authDomain: "davintohq.firebaseapp.com",
-    projectId: "davintohq",
-    storageBucket: "davintohq.appspot.com",
-    messagingSenderId: "156992522736",
-    appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-  };
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged, updateProfile
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-  const auth = getAuth();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
 
-  let currentUser = null;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
 
-  const chatBox = document.getElementById('chatBox');
-  const sendBtn = document.getElementById('sendBtn');
-  const chatMessage = document.getElementById('chatMessage');
-  const themeToggle = document.getElementById('themeToggle');
+    let currentUser = null;
+    const chatBox = document.getElementById('chatBox');
+    const sendBtn = document.getElementById('sendBtn');
+    const chatMessage = document.getElementById('chatMessage');
+    const themeToggle = document.getElementById('themeToggle');
 
-  // Theme toggle
-  themeToggle.onclick = () => {
-    const root = document.documentElement;
-    const current = root.getAttribute('data-theme');
-    root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
-  };
+    themeToggle.onclick = () => {
+      const root = document.documentElement;
+      const current = root.getAttribute('data-theme');
+      root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    };
 
-  // Sign in and listen
-  signInAnonymously(auth).catch(console.error);
+    signInAnonymously(auth).catch(console.error);
 
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-
-      // Prompt for name if none
-      if (!user.displayName) {
-        const name = prompt("Enter a display name:") || "User";
-        await updateProfile(user, { displayName: name });
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        if (!user.displayName) {
+          const name = prompt("Choose a display name") || "User";
+          await updateProfile(user, { displayName: name });
+        }
+        listenForMessages();
       }
+    });
 
-      listenForMessages();
-    }
-  });
+    sendBtn.onclick = async () => {
+      const msg = chatMessage.value.trim();
+      if (!msg || !currentUser) return;
 
-  // Send message
-  sendBtn.onclick = async () => {
-    const msg = chatMessage.value.trim();
-    if (!msg || !currentUser) return;
-
-    try {
       await addDoc(collection(db, 'globalChats'), {
         uid: currentUser.uid,
         text: msg,
@@ -65,62 +82,55 @@
         reactions: {}
       });
       chatMessage.value = '';
-    } catch (e) {
-      console.error("Error sending message:", e);
-    }
-  };
+    };
 
-  // Real-time message listener
-  function listenForMessages() {
-    const q = query(collection(db, 'globalChats'), orderBy('timestamp'));
-    onSnapshot(q, (snapshot) => {
-      chatBox.innerHTML = '';
-      snapshot.forEach((docSnap) => {
-        const data = docSnap.data();
-        const div = document.createElement('div');
-        div.className = 'message';
-        if (data.uid === currentUser?.uid) div.classList.add('me');
+    function listenForMessages() {
+      const q = query(collection(db, 'globalChats'), orderBy('timestamp'));
+      onSnapshot(q, (snapshot) => {
+        chatBox.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+          const data = docSnap.data();
+          const div = document.createElement('div');
+          div.className = 'message';
+          if (data.uid === currentUser?.uid) div.classList.add('me');
 
-        div.innerHTML = `
-          <div><strong>${data.name || 'User'}:</strong></div>
-          <div>${data.text}</div>
-          <div class="actions">
-            <span class="react" data-id="${docSnap.id}" data-type="heart">❤️</span>
-            <span class="react" data-id="${docSnap.id}" data-type="laugh">😂</span>
-            <span class="react" data-id="${docSnap.id}" data-type="fire">🔥</span>
-            ${data.uid === currentUser?.uid ? `
-              <button class="edit" data-id="${docSnap.id}"><i class="fas fa-edit"></i></button>
-              <button class="delete" data-id="${docSnap.id}"><i class="fas fa-trash"></i></button>
-            ` : ''}
-          </div>
-        `;
-        chatBox.appendChild(div);
+          div.innerHTML = `
+            <strong>${data.name || 'User'}:</strong> ${data.text}
+            <div class="actions">
+              <span class="react" data-id="${docSnap.id}" data-type="heart">❤️</span>
+              <span class="react" data-id="${docSnap.id}" data-type="laugh">😂</span>
+              <span class="react" data-id="${docSnap.id}" data-type="fire">🔥</span>
+              ${data.uid === currentUser?.uid ? `
+                <button class="edit" data-id="${docSnap.id}">✏️</button>
+                <button class="delete" data-id="${docSnap.id}">🗑️</button>` : ''}
+            </div>`;
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-  }
-
-  // Edit, delete, react
-  document.addEventListener('click', async (e) => {
-    const id = e.target.dataset.id;
-    if (!id) return;
-
-    const ref = doc(db, 'globalChats', id);
-
-    if (e.target.classList.contains('edit')) {
-      const newMsg = prompt("Edit your message:");
-      if (newMsg) await updateDoc(ref, { text: newMsg });
-    } else if (e.target.classList.contains('delete')) {
-      await deleteDoc(ref);
-    } else if (e.target.classList.contains('react')) {
-      const type = e.target.dataset.type;
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
-        const data = snap.data();
-        const reactions = { ...data.reactions };
-        reactions[type] = (reactions[type] || 0) + 1;
-        await updateDoc(ref, { reactions });
-      }
     }
-  });
-</script>
+
+    document.addEventListener('click', async (e) => {
+      const id = e.target.dataset.id;
+      if (!id) return;
+
+      const ref = doc(db, 'globalChats', id);
+      if (e.target.classList.contains('edit')) {
+        const newMsg = prompt("Edit your message:");
+        if (newMsg) await updateDoc(ref, { text: newMsg });
+      } else if (e.target.classList.contains('delete')) {
+        await deleteDoc(ref);
+      } else if (e.target.classList.contains('react')) {
+        const type = e.target.dataset.type;
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          const reactions = { ...data.reactions };
+          reactions[type] = (reactions[type] || 0) + 1;
+          await updateDoc(ref, { reactions });
+        }
+      }
+    });
+  </script>
+</body>
+</html>

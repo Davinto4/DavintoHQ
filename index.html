@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -45,9 +44,7 @@
     }
   </style>
 </head>
-<body>
-
-<div class="container">
+<body><div class="container">
   <h2 id="form-title">Login</h2>
   <input type="email" id="email" placeholder="Email" required />
   <input type="password" id="password" placeholder="Password" required />
@@ -56,9 +53,7 @@
     <span id="toggle-text">Don't have an account? <a href="#" id="switch-mode">Sign up</a></span>
   </p>
   <p class="error" id="error-msg"></p>
-</div>
-
-<script type="module">
+</div><script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
@@ -95,7 +90,6 @@
       ? `Don't have an account? <a href="#" id="switch-mode">Sign up</a>`
       : `Already have an account? <a href="#" id="switch-mode">Login</a>`;
     errorMsg.textContent = "";
-    // Rebind listener
     document.getElementById("switch-mode").addEventListener("click", switchMode.click);
   });
 
@@ -142,7 +136,5 @@
       errorMsg.textContent = error.message;
     }
   });
-</script>
-
-</body>
+</script></body>
 </html>

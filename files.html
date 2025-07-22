@@ -1,32 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Files - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
+  <div id="sidebar"></div>  <main class="flex-1 p-6 max-w-6xl mx-auto">
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold text-blue-700">📁 Files</h1>
+      <div class="space-x-2">
+        <button id="exportCsv" class="px-4 py-1 bg-green-600 text-white rounded">Export CSV</button>
+        <button id="exportPdf" class="px-4 py-1 bg-red-600 text-white rounded">Export PDF</button>
+      </div>
+    </div><div class="mb-4 flex gap-2">
+  <input type="text" id="searchInput" placeholder="Search files..." class="border p-2 rounded w-full">
+</div>
 
-  <main class="flex-1 p-6">
-    <h1 class="text-2xl font-bold mb-4">📂 Shared Files</h1>
-    <input type="file" id="fileInput" class="mb-4" />
-    <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Upload</button>
-    <div id="filesList" class="mt-6 space-y-3"></div>
-  </main>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="fileList"></div>
 
-  <script type="module">
+  </main>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, getDocs, serverTimestamp
+      getFirestore, collection, query, where, getDocs, deleteDoc, doc, onSnapshot
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
-      getStorage, ref, uploadBytes, getDownloadURL
+      getStorage, ref, getDownloadURL, deleteObject
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-    import {
-      getAuth, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { logActivity } from './log-utils.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -39,44 +42,106 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore();
-    const storage = getStorage();
     const auth = getAuth();
+    const storage = getStorage();
 
-    const fileInput = document.getElementById("fileInput");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const filesList = document.getElementById("filesList");
+    const fileList = document.getElementById("fileList");
+    const searchInput = document.getElementById("searchInput");
+    let allFiles = [];
+
+    const renderFiles = (files) => {
+      fileList.innerHTML = "";
+      files.forEach(file => {
+        const card = document.createElement("div");
+        card.className = "bg-white p-4 shadow rounded";
+        card.innerHTML = `
+          <h3 class="text-lg font-semibold">${file.name}</h3>
+          <p class="text-sm text-gray-500">Uploaded by: ${file.uploader}</p>
+          <p class="text-sm text-gray-500">Category: ${file.category || 'Uncategorized'}</p>
+          <div class="mt-2 flex gap-2">
+            <a href="${file.url}" target="_blank" class="text-blue-600">Preview</a>
+            <a href="${file.url}" download class="text-green-600">Download</a>
+            ${file.canDelete ? `<button data-id="${file.id}" class="text-red-600 deleteBtn">Delete</button>` : ''}
+          </div>
+        `;
+        fileList.appendChild(card);
+      });
+
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          const file = allFiles.find(f => f.id === id);
+          if (confirm("Delete this file?")) {
+            await deleteDoc(doc(db, "files", id));
+            await deleteObject(ref(storage, file.path));
+            await logActivity("Deleted file", { name: file.name });
+          }
+        });
+      });
+    };
+
+    function filterFiles(keyword) {
+      const term = keyword.toLowerCase();
+      const filtered = allFiles.filter(file =>
+        file.name.toLowerCase().includes(term) ||
+        file.uploader?.toLowerCase().includes(term) ||
+        file.category?.toLowerCase().includes(term)
+      );
+      renderFiles(filtered);
+    }
+
+    function exportCsv(files) {
+      let csv = "Name,Uploader,Category,URL\n";
+      files.forEach(f => {
+        csv += `${f.name},${f.uploader},${f.category},${f.url}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "files.csv";
+      link.click();
+    }
+
+    function exportPdf(files) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("File List", 10, 10);
+      let y = 20;
+      files.forEach((f, i) => {
+        doc.text(`${i + 1}. ${f.name} (${f.uploader || ''})`, 10, y);
+        y += 10;
+      });
+      doc.save("files.pdf");
+    }
+
+    searchInput.addEventListener("input", (e) => filterFiles(e.target.value));
+    document.getElementById("exportCsv").addEventListener("click", () => exportCsv(allFiles));
+    document.getElementById("exportPdf").addEventListener("click", () => exportPdf(allFiles));
 
     onAuthStateChanged(auth, async user => {
       if (!user) return location.href = "index.html";
+      const roleSnap = await getDocs(query(collection(db, "users")));
+      const roles = {};
+      roleSnap.forEach(doc => roles[doc.id] = doc.data().role);
 
-      uploadBtn.onclick = async () => {
-        const file = fileInput.files[0];
-        if (!file) return alert("Choose a file");
-
-        const storageRef = ref(storage, "shared_files/" + file.name);
-        await uploadBytes(storageRef, file);
-        const url = await getDownloadURL(storageRef);
-        await addDoc(collection(db, "sharedFiles"), {
-          name: file.name,
-          url,
-          uploadedBy: user.uid,
-          timestamp: serverTimestamp()
-        });
-        alert("Uploaded!");
-        location.reload();
-      };
-
-      const snapshot = await getDocs(collection(db, "sharedFiles"));
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement("div");
-        div.className = "bg-white p-3 rounded shadow";
-        div.innerHTML = `<a class="text-blue-700 underline" href="${data.url}" target="_blank">${data.name}</a>`;
-        filesList.appendChild(div);
+      onSnapshot(collection(db, "files"), async snap => {
+        allFiles = await Promise.all(snap.docs.map(async doc => {
+          const d = doc.data();
+          const url = await getDownloadURL(ref(storage, d.path));
+          return {
+            id: doc.id,
+            name: d.name,
+            path: d.path,
+            url,
+            category: d.category || "",
+            uploader: d.uploader || "",
+            canDelete: roles[user.uid] === 'owner' || roles[user.uid] === 'admin'
+          };
+        }));
+        renderFiles(allFiles);
       });
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script>
-</body>
+  </script></body>
 </html>

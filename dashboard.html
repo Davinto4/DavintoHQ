@@ -1,62 +1,41 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard | DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen">
+<body class="bg-gray-100 flex min-h-screen">
+  <div id="sidebar"></div>  <main class="flex-1 p-6">
+    <h1 class="text-3xl font-bold mb-4 text-blue-700">Welcome to DavintoHQ</h1><section class="bg-white p-4 rounded shadow mb-6">
+  <h2 class="text-xl font-semibold mb-2">📢 Announcements</h2>
+  <p>View the latest updates and alerts for everyone at DavintoHQ.</p>
+  <a href="announcements.html" class="text-blue-600 underline">Go to Announcements</a>
+</section>
 
-  <!-- Navbar -->
-  <nav class="bg-blue-600 text-white p-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">DavintoHQ</h1>
-    <button id="logoutBtn" class="bg-white text-blue-600 px-3 py-1 rounded font-semibold hover:bg-gray-100">
-      Logout
-    </button>
-  </nav>
+<section class="bg-white p-4 rounded shadow mb-6">
+  <h2 class="text-xl font-semibold mb-2">📂 Files & Resources</h2>
+  <p>Access shared documents and resources here.</p>
+  <a href="files.html" class="text-blue-600 underline">Go to Files</a>
+</section>
 
-  <!-- Content -->
-  <div class="p-6">
-    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Welcome to your Dashboard</h2>
-
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- Blog Posts -->
-      <a href="blog.html" class="bg-white shadow rounded p-5 hover:shadow-md transition">
-        <h3 class="text-lg font-semibold text-blue-600">📚 Blog</h3>
-        <p class="text-gray-600 mt-2">View latest posts and announcements.</p>
-      </a>
-
-      <!-- Files -->
-      <a href="files.html" class="bg-white shadow rounded p-5 hover:shadow-md transition">
-        <h3 class="text-lg font-semibold text-blue-600">📁 Files</h3>
-        <p class="text-gray-600 mt-2">Browse and upload company files.</p>
-      </a>
-
-      <!-- Chat -->
-      <a href="private-chat.html" class="bg-white shadow rounded p-5 hover:shadow-md transition">
-        <h3 class="text-lg font-semibold text-blue-600">💬 Chat</h3>
-        <p class="text-gray-600 mt-2">Connect with others privately.</p>
-      </a>
-
-      <!-- Profile -->
-      <a href="profile.html" class="bg-white shadow rounded p-5 hover:shadow-md transition">
-        <h3 class="text-lg font-semibold text-blue-600">👤 Profile</h3>
-        <p class="text-gray-600 mt-2">View and manage your profile info.</p>
-      </a>
-
-      <!-- Search -->
-      <a href="search.html" class="bg-white shadow rounded p-5 hover:shadow-md transition">
-        <h3 class="text-lg font-semibold text-blue-600">🔍 Global Search</h3>
-        <p class="text-gray-600 mt-2">Search users across the platform.</p>
-      </a>
-    </div>
+<section class="bg-white p-4 rounded shadow mb-6">
+  <h2 class="text-xl font-semibold mb-2">💬 Global Chat</h2>
+  <div id="chatMessages" class="h-60 overflow-y-auto border p-2 rounded bg-gray-50 mb-2"></div>
+  <div class="flex gap-2">
+    <input type="text" id="chatInput" class="flex-1 border px-2 py-1 rounded" placeholder="Type a message...">
+    <button id="sendChat" class="bg-blue-600 text-white px-4 py-1 rounded">Send</button>
   </div>
+</section>
 
-  <!-- Firebase + Logout Script -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  </main>  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import {
+      getAuth, onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -68,19 +47,45 @@
     };
 
     const app = initializeApp(firebaseConfig);
+    const db = getFirestore();
     const auth = getAuth();
 
-    // Redirect if not logged in
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const sendChat = document.getElementById("sendChat");
+
     onAuthStateChanged(auth, user => {
-      if (!user) {
-        window.location.href = "index.html";
-      }
+      if (!user) return location.href = "index.html";
+
+      sendChat.onclick = async () => {
+        const text = chatInput.value.trim();
+        if (!text) return;
+        await addDoc(collection(db, "globalChats"), {
+          uid: user.uid,
+          text,
+          displayName: user.displayName || "Anonymous",
+          timestamp: serverTimestamp()
+        });
+        chatInput.value = "";
+      };
+
+      const chatQuery = query(collection(db, "globalChats"), orderBy("timestamp"));
+      onSnapshot(chatQuery, snapshot => {
+        chatMessages.innerHTML = "";
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "mb-2";
+          div.innerHTML = `
+            <p><strong>${data.displayName}</strong> <span class="text-xs text-gray-500">${data.timestamp?.toDate().toLocaleString() || ""}</span></p>
+            <p class="ml-2">${data.text}</p>
+          `;
+          chatMessages.appendChild(div);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      });
     });
 
-    document.getElementById("logoutBtn").addEventListener("click", async () => {
-      await signOut(auth);
-      window.location.href = "index.html";
-    });
-  </script>
-</body>
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script></body>
 </html>

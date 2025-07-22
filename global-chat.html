@@ -5,35 +5,38 @@
   <title>Global Chat - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.css" />
 </head>
 <body class="bg-gray-100 flex min-h-screen">
   <div id="sidebar"></div>
 
-  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-600 mb-2">🌐 Global Chat</h1>
-    <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 p-2 bg-white rounded shadow-inner"></div>
+  <main class="flex-1 flex flex-col">
+    <header class="bg-white shadow p-4">
+      <h1 class="text-xl font-bold text-blue-600">🌐 Global Chat</h1>
+    </header>
 
-    <form id="chatForm" class="mt-2 flex gap-2">
-      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border rounded" />
-      <input id="mediaInput" type="file" accept="image/*,video/*" class="hidden" />
-      <button type="button" id="emojiBtn" class="bg-yellow-200 px-3 rounded">😊</button>
-      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
+    <section id="chatBox" class="flex-1 overflow-y-auto p-4 space-y-2"></section>
+
+    <form id="chatForm" class="bg-white p-4 flex gap-2 border-t">
+      <input
+        type="text"
+        id="messageInput"
+        class="flex-1 p-2 border rounded"
+        placeholder="Type a message"
+        required
+      />
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
     </form>
-    <emoji-picker style="display:none;" id="emojiPicker"></emoji-picker>
   </main>
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import {
-      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, doc, deleteDoc, updateDoc, query, orderBy
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
     import {
-      getAuth, onAuthStateChanged
+      getAuth, onAuthStateChanged, signInAnonymously
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import {
-      getStorage, ref, uploadBytes, getDownloadURL
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -47,77 +50,113 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore();
     const auth = getAuth();
-    const storage = getStorage();
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const messageInput = document.getElementById("messageInput");
-    const mediaInput = document.getElementById("mediaInput");
-    const emojiBtn = document.getElementById("emojiBtn");
-    const emojiPicker = document.getElementById("emojiPicker");
 
-    let currentUser;
+    let currentUser = null;
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href = "index.html";
+    function createMessageElement(docSnap, userId) {
+      const data = docSnap.data();
+      const isSender = data.senderId === userId;
+
+      const div = document.createElement("div");
+      div.className = `p-2 rounded max-w-[75%] relative ${
+        isSender ? "bg-blue-100 self-end text-right ml-auto" : "bg-white"
+      }`;
+      div.innerHTML = `
+        <p class="text-sm font-semibold">${data.senderName || "Anonymous"}</p>
+        <p class="text-md">${data.text}</p>
+        <p class="text-xs text-gray-500">${new Date(data.timestamp?.toDate()).toLocaleTimeString()}</p>
+        ${
+          isSender
+            ? `<button class="absolute top-1 right-1 text-gray-400 hover:text-black options-btn">⋮</button>
+               <div class="hidden absolute top-6 right-1 bg-white border rounded shadow p-1 z-10 options-menu">
+                 <button class="text-sm text-blue-600 edit-btn">Edit</button>
+                 <button class="text-sm text-red-500 delete-btn">Delete</button>
+               </div>`
+            : ""
+        }
+      `;
+
+      // Add event listener for options menu toggle
+      const optionsBtn = div.querySelector(".options-btn");
+      const optionsMenu = div.querySelector(".options-menu");
+      if (optionsBtn && optionsMenu) {
+        optionsBtn.onclick = (e) => {
+          e.stopPropagation();
+          document.querySelectorAll(".options-menu").forEach(menu => menu.classList.add("hidden"));
+          optionsMenu.classList.toggle("hidden");
+        };
+      }
+
+      // Delete message
+      const deleteBtn = div.querySelector(".delete-btn");
+      if (deleteBtn) {
+        deleteBtn.onclick = async () => {
+          if (confirm("Delete this message?")) {
+            await deleteDoc(doc(db, "globalChats", docSnap.id));
+          }
+        };
+      }
+
+      // Edit message
+      const editBtn = div.querySelector(".edit-btn");
+      if (editBtn) {
+        editBtn.onclick = async () => {
+          const newText = prompt("Edit message:", data.text);
+          if (newText && newText !== data.text) {
+            await updateDoc(doc(db, "globalChats", docSnap.id), {
+              text: newText,
+              edited: true
+            });
+          }
+        };
+      }
+
+      return div;
+    }
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        await signInAnonymously(auth);
+        return;
+      }
+
       currentUser = user;
 
       const q = query(collection(db, "globalChats"), orderBy("timestamp"));
       onSnapshot(q, snapshot => {
         chatBox.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const isSelf = msg.uid === user.uid;
-          const div = document.createElement("div");
-          div.className = `p-2 rounded max-w-xl ${isSelf ? 'bg-blue-100 ml-auto' : 'bg-gray-100'}`;
-          div.innerHTML = `
-            <div class="text-sm font-semibold text-gray-700">${msg.username || 'Anonymous'}</div>
-            ${msg.text ? `<div class="text-base text-black">${msg.text}</div>` : ""}
-            ${msg.mediaUrl ? `<img src="${msg.mediaUrl}" class="w-48 mt-2 rounded" />` : ""}
-            <div class="text-xs text-gray-400 mt-1">${msg.timestamp?.toDate().toLocaleString()}</div>
-          `;
-          chatBox.appendChild(div);
+        snapshot.forEach(docSnap => {
+          const msg = createMessageElement(docSnap, user.uid);
+          chatBox.appendChild(msg);
         });
         chatBox.scrollTop = chatBox.scrollHeight;
       });
     });
 
-    chatForm.addEventListener("submit", async e => {
+    chatForm.onsubmit = async (e) => {
       e.preventDefault();
       const text = messageInput.value.trim();
-      const file = mediaInput.files[0];
-      let mediaUrl = "";
-
-      if (!text && !file) return;
-
-      if (file) {
-        const fileRef = ref(storage, `chatMedia/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        mediaUrl = await getDownloadURL(fileRef);
-      }
+      if (!text) return;
 
       await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
-        username: currentUser.email,
+        senderId: currentUser.uid,
+        senderName: currentUser.email || "Guest",
         text,
-        mediaUrl,
         timestamp: serverTimestamp()
       });
 
       messageInput.value = "";
-      mediaInput.value = "";
-    });
+    };
 
-    emojiBtn.addEventListener("click", () => {
-      emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";
-    });
-
-    emojiPicker.addEventListener("emoji-click", e => {
-      messageInput.value += e.detail.unicode;
-    });
+    document.body.onclick = () => {
+      document.querySelectorAll(".options-menu").forEach(menu => menu.classList.add("hidden"));
+    };
 
     import("./sidebar.js").then(m => m.loadSidebar());
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.js" type="module"></script>
 </body>
 </html>

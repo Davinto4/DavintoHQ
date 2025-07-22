@@ -2,21 +2,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Announcements - DavintoHQ</title>
+  <title>Announcements</title>
   <link rel="stylesheet" href="styles.css" />
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
       getFirestore,
       collection,
-      addDoc,
       query,
       orderBy,
       onSnapshot,
       doc,
       deleteDoc,
-      updateDoc,
-      serverTimestamp
+      getDoc
     } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
     import {
       getAuth,
@@ -35,117 +33,89 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app);
 
-const form = document.getElementById("announcementForm");
-const list = document.getElementById("announcementsList");
+const container = document.getElementById("announcementList");
+let currentUserEmail = null;
+let isAdmin = false;
 
-onAuthStateChanged(auth, (user) => {
-  if (!user) {
-    window.location.href = "index.html";
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUserEmail = user.email;
+    const userDoc = await getDoc(doc(db, "users", user.uid));
+    if (user.email === "macdinodavinto@gmail.com" || (userDoc.exists() && userDoc.data().role === "admin")) {
+      isAdmin = true;
+    }
   }
 });
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const title = form.title.value;
-  const content = form.content.value;
-  const category = form.category.value;
-
-  if (!title || !content) return;
-
-  await addDoc(collection(db, "announcements"), {
-    title,
-    content,
-    category,
-    timestamp: serverTimestamp(),
-    pinned: category === "urgent"
-  });
-  form.reset();
-});
-
 const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+
 onSnapshot(q, (snapshot) => {
-  list.innerHTML = "";
+  container.innerHTML = "";
   snapshot.forEach((docSnap) => {
     const data = docSnap.data();
     const div = document.createElement("div");
-    div.className = `announcement ${data.pinned ? 'pinned' : ''}`;
+    div.classList.add("announcement");
+    if (data.category === "urgent") {
+      div.classList.add("urgent");
+    }
     div.innerHTML = `
       <h3>${data.title}</h3>
-      <small>[${data.category || 'info'}]</small>
       <p>${data.content}</p>
-      <button onclick="deleteAnnouncement('${docSnap.id}')">Delete</button>
+      <small>${new Date(data.timestamp?.toDate()).toLocaleString()}</small>
+      <span class="tag">${data.category}</span>
+      ${(isAdmin || currentUserEmail === "macdinodavinto@gmail.com") ? `<button class="deleteBtn" data-id="${docSnap.id}">Delete</button>` : ""}
     `;
-    list.appendChild(div);
+    container.appendChild(div);
+  });
+
+  document.querySelectorAll(".deleteBtn").forEach((btn) => {
+    btn.onclick = async () => {
+      const id = btn.dataset.id;
+      if (confirm("Delete this announcement?")) {
+        await deleteDoc(doc(db, "announcements", id));
+      }
+    };
   });
 });
-
-window.deleteAnnouncement = async (id) => {
-  await deleteDoc(doc(db, "announcements", id));
-};
 
   </script>
 </head>
 <body>
-  <header>
-    <h1>📢 Announcements</h1>
-    <a href="dashboard.html">← Back to Dashboard</a>
-  </header>  <main>
-    <form id="announcementForm">
-      <input type="text" name="title" placeholder="Title" required />
-      <textarea name="content" placeholder="Announcement..." required></textarea>
-      <select name="category">
-        <option value="info">Info</option>
-        <option value="event">Event</option>
-        <option value="urgent">Urgent</option>
-      </select>
-      <button type="submit">Post Announcement</button>
-    </form><section id="announcementsList"></section>
-
-  </main>  <style>
+  <h1>📢 Announcements</h1>
+  <div id="announcementList"></div>  <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
+      background: #f9f9f9;
       padding: 1rem;
-      background: #f4f4f4;
-    }
-    header {
-      background: #222;
-      color: #fff;
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    form {
-      background: white;
-      padding: 1rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #announcementsList {
-      margin-top: 1rem;
     }
     .announcement {
       background: white;
+      margin-bottom: 1rem;
       padding: 1rem;
       border-radius: 8px;
-      margin-bottom: 1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      position: relative;
     }
-    .pinned {
-      border-left: 4px solid crimson;
+    .urgent {
+      border-left: 5px solid red;
+    }
+    .tag {
+      display: inline-block;
+      background: #eee;
+      padding: 0.2rem 0.5rem;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    .deleteBtn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: crimson;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      border-radius: 5px;
+      cursor: pointer;
     }
   </style></body>
 </html>

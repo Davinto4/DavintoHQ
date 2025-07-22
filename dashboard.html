@@ -8,60 +8,27 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
   <script src="firebase.js" defer></script>
   <script src="scripts/sidebar.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="dashboard-container">
     <aside id="sidebar"></aside>
+
     <main class="dashboard-content">
       <h1 id="greeting">Welcome to DavintoHQ</h1>
 
-      <div class="quick-links">
-        <a href="blog.html" class="dashboard-card"><i data-lucide="file-text"></i><span>Blog</span></a>
-        <a href="private-chat.html" class="dashboard-card"><i data-lucide="message-square"></i><span>Private Chat</span></a>
-        <a href="global-chat.html" class="dashboard-card"><i data-lucide="globe"></i><span>Global Chat</span></a>
-        <a href="announcements.html" class="dashboard-card"><i data-lucide="megaphone"></i><span>Announcements</span></a>
-        <a href="files.html" class="dashboard-card"><i data-lucide="folder"></i><span>Files</span></a>
-        <a href="reports.html" class="dashboard-card"><i data-lucide="bar-chart-2"></i><span>Reports</span></a>
-        <a href="search.html" class="dashboard-card"><i data-lucide="search"></i><span>Search</span></a>
-        <a href="profile.html" class="dashboard-card"><i data-lucide="user"></i><span>My Profile</span></a>
+      <div class="button-grid">
+        <a href="blog.html" class="btn-feature"><i data-lucide="file-text"></i><span>Blog</span></a>
+        <a href="private-chat.html" class="btn-feature"><i data-lucide="message-square"></i><span>Private Chat</span></a>
+        <a href="global-chat.html" class="btn-feature"><i data-lucide="globe"></i><span>Global Chat</span></a>
+        <a href="announcements.html" class="btn-feature"><i data-lucide="megaphone"></i><span>Announcements</span></a>
+        <a href="files.html" class="btn-feature"><i data-lucide="folder-open"></i><span>Files</span></a>
+        <a href="reports.html" class="btn-feature"><i data-lucide="bar-chart"></i><span>Reports</span></a>
+        <a href="search.html" class="btn-feature"><i data-lucide="search"></i><span>Search</span></a>
+        <a href="profile.html" class="btn-feature"><i data-lucide="user"></i><span>My Profile</span></a>
       </div>
-
-      <section class="dashboard-stats">
-        <h2>Live Site Stats</h2>
-        <div class="stats-grid">
-          <div class="stat-box">
-            <h3>Total Users</h3>
-            <p id="totalUsers">0</p>
-          </div>
-          <div class="stat-box">
-            <h3>Active Global Chats</h3>
-            <p id="activeChats">0</p>
-          </div>
-          <div class="stat-box">
-            <h3>Announcements</h3>
-            <p id="announcementCount">0</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="recent-activity">
-        <h2>Recent Activity</h2>
-        <ul id="recentActivityList">
-          <li>Loading recent activity...</li>
-        </ul>
-      </section>
-
-      <section id="adminWidgets" style="display: none;">
-        <h2>Admin Tools</h2>
-        <div class="stats-grid">
-          <a href="manage-admins.html" class="dashboard-card"><i data-lucide="shield-check"></i><span>Manage Admins</span></a>
-          <a href="admin.html" class="dashboard-card"><i data-lucide="settings"></i><span>Admin Dashboard</span></a>
-        </div>
-      </section>
     </main>
   </div>
 
@@ -71,96 +38,67 @@
 
     auth.onAuthStateChanged(user => {
       if (!user) return location.href = 'index.html';
-
       const uid = user.uid;
-      const userRef = db.collection('users').doc(uid);
-
-      userRef.onSnapshot(doc => {
-        const data = doc.data();
-        const name = data?.name || 'User';
-        const role = data?.role || 'user';
+      db.collection('users').doc(uid).get().then(doc => {
+        const name = doc.data()?.name || 'User';
         document.getElementById('greeting').innerText = `Welcome, ${name}`;
-
-        if (['admin', 'owner'].includes(role)) {
-          document.getElementById('adminWidgets').style.display = 'block';
-        }
       });
-
-      db.collection('users').onSnapshot(snapshot => {
-        document.getElementById('totalUsers').innerText = snapshot.size;
-      });
-
-      db.collection('globalChats').onSnapshot(snapshot => {
-        document.getElementById('activeChats').innerText = snapshot.size;
-      });
-
-      db.collection('announcements').onSnapshot(snapshot => {
-        document.getElementById('announcementCount').innerText = snapshot.size;
-      });
-
-      db.collection('activityLogs')
-        .orderBy('timestamp', 'desc')
-        .limit(5)
-        .onSnapshot(snapshot => {
-          const list = document.getElementById('recentActivityList');
-          list.innerHTML = '';
-          snapshot.forEach(doc => {
-            const log = doc.data();
-            const li = document.createElement('li');
-            li.textContent = `${log.message || 'No message'} • ${new Date(log.timestamp?.toDate()).toLocaleString()}`;
-            list.appendChild(li);
-          });
-        });
-
       lucide.createIcons();
     });
   </script>
 
   <style>
-    .dashboard-card {
+    body {
+      font-family: sans-serif;
+      background: #f6f7fb;
+      margin: 0;
+      padding: 0;
+    }
+
+    .dashboard-content {
+      padding: 2rem;
+    }
+
+    h1 {
+      margin-bottom: 1.5rem;
+    }
+
+    .button-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+
+    .btn-feature {
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 1rem;
+      padding: 1rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 1rem;
-      border-radius: 1rem;
-      background: #fff;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-      transition: 0.2s ease;
       text-align: center;
-      gap: 0.5rem;
+      text-decoration: none;
+      color: #333;
+      transition: 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
     }
-    .dashboard-card:hover {
-      transform: scale(1.03);
-      background: #f3f3f3;
+
+    .btn-feature:hover {
+      background-color: #f0f4f8;
+      transform: translateY(-2px);
     }
-    .dashboard-card i {
+
+    .btn-feature i {
       width: 32px;
       height: 32px;
-    }
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 1rem;
-    }
-    .stat-box {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 1rem;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    .recent-activity ul {
-      list-style: none;
-      padding: 0;
-      margin-top: 1rem;
-    }
-    .recent-activity li {
-      background: #f9f9f9;
       margin-bottom: 0.5rem;
-      padding: 0.75rem 1rem;
-      border-left: 4px solid #3498db;
-      border-radius: 0.5rem;
+      color: #007bff;
+    }
+
+    .btn-feature span {
+      font-size: 0.9rem;
+      font-weight: 500;
     }
   </style>
 </body>

@@ -1,115 +1,178 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Global Chat - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DavintoHQ Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+  <script src="firebase.js" defer></script>
+  <script src="scripts/sidebar.js" defer></script>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-600 mb-2">🌐 Global Chat</h1>
-    <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 p-2 bg-white rounded shadow-inner"></div><form id="chatForm" class="mt-2 flex gap-2">
-  <input id="messageInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border rounded" />
-  <input id="mediaInput" type="file" accept="image/*,video/*" class="hidden" />
-  <button type="button" id="emojiBtn" class="bg-yellow-200 px-3 rounded">😊</button>
-  <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
-</form>
-<emoji-picker style="display:none;" id="emojiPicker"></emoji-picker>
+<body>
+  <div class="dashboard-container">
+    <aside id="sidebar"></aside>
+    <main class="dashboard-content">
+      <h1>Welcome to DavintoHQ</h1>
 
-  </main>  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import {
-      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import {
-      getAuth, onAuthStateChanged
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import {
-      getStorage, ref, uploadBytes, getDownloadURL
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+      <div class="quick-links">
+        <a href="blog.html" class="dashboard-card">
+          <i data-lucide="file-text"></i><span>Blog</span>
+        </a>
+        <a href="private-chat.html" class="dashboard-card">
+          <i data-lucide="message-square"></i><span>Private Chat</span>
+        </a>
+        <a href="global-chat.html" class="dashboard-card">
+          <i data-lucide="globe"></i><span>Global Chat</span>
+        </a>
+        <a href="announcements.html" class="dashboard-card">
+          <i data-lucide="megaphone"></i><span>Announcements</span>
+        </a>
+        <a href="files.html" class="dashboard-card">
+          <i data-lucide="folder"></i><span>Files</span>
+        </a>
+        <a href="reports.html" class="dashboard-card">
+          <i data-lucide="bar-chart-2"></i><span>Reports</span>
+        </a>
+        <a href="search.html" class="dashboard-card">
+          <i data-lucide="search"></i><span>Search</span>
+        </a>
+        <a href="profile.html" class="dashboard-card">
+          <i data-lucide="user"></i><span>My Profile</span>
+        </a>
+      </div>
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
+      <section class="dashboard-stats">
+        <h2>Site Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <h3>Total Users</h3>
+            <p id="totalUsers">Loading...</p>
+          </div>
+          <div class="stat-box">
+            <h3>Active Chats</h3>
+            <p id="activeChats">Loading...</p>
+          </div>
+          <div class="stat-box">
+            <h3>Announcements</h3>
+            <p id="announcementCount">Loading...</p>
+          </div>
+        </div>
+      </section>
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
-    const storage = getStorage();
+      <section class="recent-activity">
+        <h2>Recent Activity</h2>
+        <ul id="recentActivityList">
+          <li>Loading recent updates...</li>
+        </ul>
+      </section>
 
-    const chatBox = document.getElementById("chatBox");
-    const chatForm = document.getElementById("chatForm");
-    const messageInput = document.getElementById("messageInput");
-    const mediaInput = document.getElementById("mediaInput");
-    const emojiBtn = document.getElementById("emojiBtn");
-    const emojiPicker = document.getElementById("emojiPicker");
+      <section id="adminWidgets" style="display: none;">
+        <h2>Admin Tools</h2>
+        <div class="stats-grid">
+          <a href="manage-admins.html" class="dashboard-card"><i data-lucide="shield"></i><span>Manage Admins</span></a>
+          <a href="admin.html" class="dashboard-card"><i data-lucide="settings"></i><span>Admin Panel</span></a>
+        </div>
+      </section>
+    </main>
+  </div>
 
-    let currentUser;
+  <script>
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href = "index.html";
-      currentUser = user;
+    auth.onAuthStateChanged(user => {
+      if (!user) return window.location.href = 'index.html';
 
-      const q = query(collection(db, "globalChats"), orderBy("timestamp"));
-      onSnapshot(q, snapshot => {
-        chatBox.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const isSelf = msg.uid === user.uid;
-          const div = document.createElement("div");
-          div.className = `p-2 rounded max-w-xl ${isSelf ? 'bg-blue-100 ml-auto' : 'bg-gray-100'}`;
-          div.innerHTML = `
-            <div class="text-sm font-semibold text-gray-700">${msg.username || 'Anonymous'}</div>
-            ${msg.text ? `<div class="text-base text-black">${msg.text}</div>` : ""}
-            ${msg.mediaUrl ? `<img src="${msg.mediaUrl}" class="w-48 mt-2 rounded" />` : ""}
-            <div class="text-xs text-gray-400 mt-1">${msg.timestamp?.toDate().toLocaleString()}</div>
-          `;
-          chatBox.appendChild(div);
+      const uid = user.uid;
+      const userDocRef = db.collection('users').doc(uid);
+
+      userDocRef.get().then(doc => {
+        const data = doc.data();
+        const role = data?.role || 'user';
+        if (['admin', 'owner'].includes(role)) {
+          document.getElementById('adminWidgets').style.display = 'block';
+        }
+      });
+
+      db.collection('users').onSnapshot(snapshot => {
+        document.getElementById('totalUsers').innerText = snapshot.size;
+      });
+
+      db.collection('globalChats').onSnapshot(snapshot => {
+        document.getElementById('activeChats').innerText = snapshot.size;
+      });
+
+      db.collection('announcements').onSnapshot(snapshot => {
+        document.getElementById('announcementCount').innerText = snapshot.size;
+      });
+
+      db.collection('activityLogs')
+        .orderBy('timestamp', 'desc')
+        .limit(5)
+        .onSnapshot(snapshot => {
+          const list = document.getElementById('recentActivityList');
+          list.innerHTML = '';
+          snapshot.forEach(doc => {
+            const log = doc.data();
+            const li = document.createElement('li');
+            li.textContent = `${log.message} (${new Date(log.timestamp?.toDate()).toLocaleString()})`;
+            list.appendChild(li);
+          });
         });
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
+
+      lucide.createIcons();
     });
+  </script>
 
-    chatForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const text = messageInput.value.trim();
-      const file = mediaInput.files[0];
-      let mediaUrl = "";
-
-      if (!text && !file) return;
-
-      if (file) {
-        const fileRef = ref(storage, `chatMedia/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        mediaUrl = await getDownloadURL(fileRef);
-      }
-
-      await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
-        username: currentUser.email,
-        text,
-        mediaUrl,
-        timestamp: serverTimestamp()
-      });
-
-      messageInput.value = "";
-      mediaInput.value = "";
-    });
-
-    emojiBtn.addEventListener("click", () => {
-      emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";
-    });
-
-    emojiPicker.addEventListener("emoji-click", e => {
-      messageInput.value += e.detail.unicode;
-    });
-
-    import("./sidebar.js").then(m => m.loadSidebar());
-  </script>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.js" type="module"></script></body>
+  <style>
+    .dashboard-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      transition: transform 0.2s ease;
+      text-align: center;
+      background: #fff;
+      gap: 0.5rem;
+    }
+    .dashboard-card:hover {
+      transform: scale(1.05);
+      background: #f0f0f0;
+    }
+    .dashboard-card i {
+      width: 32px;
+      height: 32px;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .stat-box {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .recent-activity ul {
+      list-style: none;
+      padding: 0;
+    }
+    .recent-activity li {
+      background: #fafafa;
+      margin-bottom: 0.5rem;
+      padding: 0.5rem 1rem;
+      border-left: 4px solid #888;
+      border-radius: 0.5rem;
+    }
+  </style>
+</body>
 </html>

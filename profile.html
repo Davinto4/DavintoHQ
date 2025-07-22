@@ -1,24 +1,33 @@
-<!-- profile.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Profile - DavintoHQ</title>
+  <title>My Profile - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex min-h-screen bg-gray-100">
+<body class="bg-gray-100 flex min-h-screen">
   <div id="sidebar"></div>
 
-  <main class="flex-1 p-6">
-    <h2 class="text-2xl font-bold text-blue-700 mb-4">User Profile</h2>
-    <div class="bg-white p-4 rounded shadow" id="profileDetails">Loading...</div>
+  <main class="flex-1 p-6 max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">👤 My Profile</h1>
+
+    <div class="bg-white rounded shadow p-4 space-y-3">
+      <p><strong>Email:</strong> <span id="email">-</span></p>
+      <p><strong>Phone:</strong> <span id="phone">-</span></p>
+      <p><strong>Username:</strong> <span id="username">-</span></p>
+
+      <div class="flex space-x-2 mt-4">
+        <input type="text" id="usernameInput" placeholder="Enter username" class="flex-1 border p-2 rounded" />
+        <button id="saveUsername" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+      </div>
+    </div>
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore, doc, getDoc
+      getFirestore, doc, setDoc, getDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
       getAuth, onAuthStateChanged
@@ -37,26 +46,31 @@
     const db = getFirestore();
     const auth = getAuth();
 
-    const profileDiv = document.getElementById("profileDetails");
-    const params = new URLSearchParams(window.location.search);
-    const uid = params.get("uid");
+    const emailEl = document.getElementById("email");
+    const phoneEl = document.getElementById("phone");
+    const usernameEl = document.getElementById("username");
+    const usernameInput = document.getElementById("usernameInput");
+    const saveBtn = document.getElementById("saveUsername");
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!uid || !user) return profileDiv.textContent = "User not found";
+    onAuthStateChanged(auth, async user => {
+      if (!user) return location.href = "index.html";
 
-      const docSnap = await getDoc(doc(db, "users", uid));
-      if (!docSnap.exists()) return profileDiv.textContent = "User not found";
+      emailEl.textContent = user.email || "N/A";
+      phoneEl.textContent = user.phoneNumber || "N/A";
 
-      const data = docSnap.data();
-      profileDiv.innerHTML = `
-        <p><strong>Username:</strong> ${data.username || 'N/A'}</p>
-        <p><strong>Email:</strong> ${data.email || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${data.phone || 'N/A'}</p>
-        <p><strong>Role:</strong> ${data.role || 'member'}</p>
-        <div class="mt-3">
-          ${user.uid !== uid ? `<a href="private-chat.html?uid=${uid}" class="bg-green-600 text-white px-3 py-1 rounded">Message</a>` : ''}
-        </div>
-      `;
+      const userDoc = doc(db, "users", user.uid);
+      const snapshot = await getDoc(userDoc);
+      const data = snapshot.data() || {};
+      usernameEl.textContent = data.username || "Not set";
+
+      saveBtn.onclick = async () => {
+        const newUsername = usernameInput.value.trim();
+        if (newUsername.length < 3) return alert("Username must be at least 3 characters.");
+        await setDoc(userDoc, { username: newUsername }, { merge: true });
+        usernameEl.textContent = newUsername;
+        usernameInput.value = "";
+        alert("Username updated!");
+      };
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());

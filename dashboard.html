@@ -12,6 +12,22 @@
   <script src="firebase.js" defer></script>
   <script src="scripts/sidebar.js" defer></script>
   <style>
+    .dashboard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logout-btn {
+      padding: 0.5rem 1rem;
+      background: #ff5252;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background: #e04848;
+    }
     .quick-links {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -53,7 +69,10 @@
   <div class="dashboard-container">
     <aside id="sidebar"></aside>
     <main class="dashboard-content">
-      <h1>Welcome to DavintoHQ</h1>
+      <div class="dashboard-header">
+        <h1>Welcome to DavintoHQ</h1>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+      </div>
 
       <div class="quick-links">
         <a href="blog.html" class="dashboard-card">📝 Blog</a>
@@ -64,7 +83,7 @@
         <a href="reports.html" class="dashboard-card">📊 Reports</a>
         <a href="search.html" class="dashboard-card">🔍 Global Search</a>
         <a href="profile.html" class="dashboard-card">👤 My Profile</a>
-        <a href="admin.html" class="dashboard-card" id="adminLink" style="display:none;">🛠️ Admin Panel</a>
+        <a href="admin.html" class="dashboard-card">🛠️ Admin Panel</a>
       </div>
 
       <section class="dashboard-stats">
@@ -88,19 +107,11 @@
   </div>
 
   <script>
+    const db = firebase.firestore();
+
     firebase.auth().onAuthStateChanged(user => {
       if (!user) return window.location.href = 'index.html';
-      const db = firebase.firestore();
 
-      // Show admin link if admin or owner
-      db.collection('users').doc(user.uid).get().then(doc => {
-        const userData = doc.data();
-        if (userData?.role === 'admin' || userData?.role === 'owner') {
-          document.getElementById('adminLink').style.display = 'inline-block';
-        }
-      });
-
-      // Load stats
       db.collection('users').get().then(snapshot => {
         document.getElementById('totalUsers').innerText = snapshot.size;
       });
@@ -113,6 +124,14 @@
         document.getElementById('announcementCount').innerText = snapshot.size;
       });
     });
+
+    function logout() {
+      firebase.auth().signOut().then(() => {
+        window.location.href = 'index.html';
+      }).catch((error) => {
+        alert('Logout failed: ' + error.message);
+      });
+    }
   </script>
 </body>
 </html>

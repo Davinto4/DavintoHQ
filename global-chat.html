@@ -1,134 +1,131 @@
 <!DOCTYPE html><html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Global Chat | DavintoHQ</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <style>
-    :root[data-theme='dark'] {
-      --bg: #1f1f1f;
-      --text: #f5f5f5;
-      --card: #2c2c2c;
-      --input: #3a3a3a;
-    }
-    :root[data-theme='light'] {
-      --bg: #f0f2f5;
-      --text: #2c3e50;
-      --card: #ffffff;
-      --input: #ffffff;
-    }
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    header {
-      background: var(--card);
-      padding: 1rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #ccc;
-    }
-    header h2 {
-      margin: 0;
-    }
-    #themeToggle {
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1.2rem;
-      color: var(--text);
-    }
-    .chat-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-    }
-    .message {
-      background: var(--card);
-      margin: 0.5rem 0;
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      max-width: 70%;
-      animation: fadeIn 0.4s ease;
-    }
-    .message.me {
-      background: #4CAF50;
-      color: white;
-      margin-left: auto;
-    }
-    .chat-input {
-      display: flex;
-      padding: 1rem;
-      background: var(--card);
-      border-top: 1px solid #ccc;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 2rem;
-      background: var(--input);
-      color: var(--text);
-      margin-right: 0.5rem;
-    }
-    .chat-input button {
-      border: none;
-      padding: 0.75rem 1.2rem;
-      border-radius: 2rem;
-      background: #007BFF;
-      color: white;
-      cursor: pointer;
-    }
-    .actions {
-      margin-top: 0.25rem;
-      display: flex;
-      gap: 0.5rem;
-      font-size: 0.9rem;
-      align-items: center;
-    }
-    .react, .reply, .forward, .pm {
-      cursor: pointer;
-    }
-    .reply-preview {
-      font-size: 0.85rem;
-      background: #ececec;
-      padding: 0.4rem 0.8rem;
-      margin-bottom: 0.5rem;
-      border-left: 4px solid #007bff;
-    }
-    .typing-status {
-      padding: 0 1rem;
-      font-style: italic;
-      font-size: 0.9rem;
-    }
-    #pinned {
-      background: #fff0c2;
-      color: #333;
-      padding: 0.5rem 1rem;
-      border-bottom: 1px solid #ddd;
-      font-weight: bold;
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
   <header>
     <h2><i class="fas fa-comments"></i> Global Chat</h2>
     <button id="themeToggle"><i class="fas fa-adjust"></i></button>
-  </header>  <div id="pinned" style="display:none;"></div>
-  <div class="typing-status" id="typingStatus"></div>
-  <div class="chat-container" id="chatBox"></div>  <div class="chat-input">
+  </header>  <div id="chatBox" class="chat-container"></div>  <div class="chat-input">
     <input type="text" id="chatMessage" placeholder="Type your message...">
     <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
-  </div>  <script type="module" src="global-chat-enhanced.js"></script></body>
+  </div>  <template id="message-template">
+    <div class="message">
+      <div class="meta"><strong class="name"></strong> <small class="timestamp"></small></div>
+      <div class="text"></div>
+      <div class="actions">
+        <span class="react" data-type="heart">❤️</span>
+        <span class="react" data-type="laugh">😂</span>
+        <span class="react" data-type="fire">🔥</span>
+        <button class="reply"><i class="fas fa-reply"></i></button>
+        <button class="pin"><i class="fas fa-thumbtack"></i></button>
+        <button class="forward"><i class="fas fa-share"></i></button>
+        <button class="pm"><i class="fas fa-envelope"></i></button>
+        <button class="edit"><i class="fas fa-edit"></i></button>
+        <button class="delete"><i class="fas fa-trash"></i></button>
+      </div>
+    </div>
+  </template>  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import {
+      getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged
+    } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth();
+    signInAnonymously(auth);
+
+    let currentUser;
+    onAuthStateChanged(auth, user => {
+      if (user) currentUser = user;
+    });
+
+    const chatBox = document.getElementById('chatBox');
+    const chatMessage = document.getElementById('chatMessage');
+    const sendBtn = document.getElementById('sendBtn');
+
+    sendBtn.onclick = async () => {
+      const text = chatMessage.value.trim();
+      if (!text || !currentUser) return;
+      await addDoc(collection(db, 'globalChats'), {
+        uid: currentUser.uid,
+        text,
+        name: 'User',
+        timestamp: serverTimestamp(),
+        reactions: {}
+      });
+      chatMessage.value = '';
+    };
+
+    const template = document.getElementById('message-template');
+    const q = query(collection(db, 'globalChats'), orderBy('timestamp'));
+    onSnapshot(q, (snapshot) => {
+      chatBox.innerHTML = '';
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const clone = template.content.cloneNode(true);
+        clone.querySelector('.name').textContent = data.name || 'User';
+        clone.querySelector('.text').textContent = data.text;
+        clone.querySelector('.timestamp').textContent = data.timestamp?.toDate().toLocaleTimeString() || '';
+
+        const msgDiv = clone.querySelector('.message');
+        if (data.uid === currentUser?.uid) msgDiv.classList.add('me');
+
+        const reacts = clone.querySelectorAll('.react');
+        reacts.forEach(r => r.dataset.id = docSnap.id);
+
+        clone.querySelector('.edit').dataset.id = docSnap.id;
+        clone.querySelector('.delete').dataset.id = docSnap.id;
+
+        chatBox.appendChild(clone);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    document.addEventListener('click', async e => {
+      if (e.target.classList.contains('edit')) {
+        const id = e.target.dataset.id;
+        const newText = prompt('Edit message:');
+        if (newText) await updateDoc(doc(db, 'globalChats', id), { text: newText });
+      } else if (e.target.classList.contains('delete')) {
+        const id = e.target.dataset.id;
+        await deleteDoc(doc(db, 'globalChats', id));
+      } else if (e.target.classList.contains('react')) {
+        const id = e.target.dataset.id;
+        const type = e.target.dataset.type;
+        const ref = doc(db, 'globalChats', id);
+        const snap = await getDoc(ref);
+        if (snap.exists()) {
+          const data = snap.data();
+          const reactions = { ...data.reactions };
+          reactions[type] = (reactions[type] || 0) + 1;
+          await updateDoc(ref, { reactions });
+        }
+      }
+    });
+
+    const themeToggle = document.getElementById('themeToggle');
+    themeToggle.onclick = () => {
+      const root = document.documentElement;
+      const theme = root.getAttribute('data-theme');
+      root.setAttribute('data-theme', theme === 'light' ? 'dark' : 'light');
+    };
+  </script></body>
 </html>

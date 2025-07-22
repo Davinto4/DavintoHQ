@@ -1,80 +1,79 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DavintoHQ Login</title>
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css">
   <script type="module">
-    // Firebase 9 Modular SDK
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    // Firebase config
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
 
-    // ✅ Your Firebase Config
     const firebaseConfig = {
-      apiKey: 'AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk',
-      authDomain: 'izuchukwu-foods.firebaseapp.com',
-      projectId: 'izuchukwu-foods',
-      storageBucket: 'izuchukwu-foods.appspot.com',
-      messagingSenderId: '811147638426',
-      appId: '1:811147638426:web:f2403b6cf7e0b6f19b1123'
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    window.addEventListener("DOMContentLoaded", () => {
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
-      const usernameInput = document.getElementById("username");
-      const loginBtn = document.getElementById("loginBtn");
-      const signupBtn = document.getElementById("signupBtn");
-      const message = document.getElementById("authMessage");
+    window.login = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("authMessage");
 
-      loginBtn.onclick = async () => {
-        try {
-          const email = emailInput.value;
-          const password = passwordInput.value;
-          await signInWithEmailAndPassword(auth, email, password);
-          window.location.href = "dashboard.html";
-        } catch (err) {
-          message.innerText = err.message;
-        }
-      };
+      try {
+        await signInWithEmailAndPassword(auth, email, password);
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        msg.innerText = error.message;
+      }
+    };
 
-      signupBtn.onclick = async () => {
-        try {
-          const email = emailInput.value;
-          const password = passwordInput.value;
-          const username = usernameInput.value || "Anonymous";
-          const userCred = await createUserWithEmailAndPassword(auth, email, password);
-          await setDoc(doc(db, "users", userCred.user.uid), {
-            email,
-            username,
-            role: "user",
-            createdAt: serverTimestamp()
-          });
-          window.location.href = "dashboard.html";
-        } catch (err) {
-          message.innerText = err.message;
-        }
-      };
-    });
+    window.signup = async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const username = document.getElementById("username").value;
+      const msg = document.getElementById("authMessage");
+
+      try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        const user = result.user;
+
+        await setDoc(doc(db, "users", user.uid), {
+          email,
+          username: username || "Anonymous",
+          role: "user",
+          createdAt: new Date()
+        });
+
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        msg.innerText = error.message;
+      }
+    };
   </script>
 </head>
 <body>
   <div class="auth-container">
     <h1>DavintoHQ</h1>
     <div class="form">
-      <input type="email" id="email" placeholder="Email" required />
-      <input type="password" id="password" placeholder="Password" required />
-      <input type="text" id="username" placeholder="Username (for sign-up only)" />
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <input type="text" id="username" placeholder="Username (for signup only)">
 
-      <button id="loginBtn">Login</button>
-      <button id="signupBtn">Sign Up</button>
-      <p id="authMessage" style="color: red;"></p>
+      <button onclick="login()">Login</button>
+      <button onclick="signup()">Sign Up</button>
+
+      <p id="authMessage"></p>
     </div>
   </div>
 </body>

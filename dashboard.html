@@ -8,98 +8,74 @@
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
   <script src="firebase.js" defer></script>
   <script src="scripts/sidebar.js" defer></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
   <div class="dashboard-container">
     <aside id="sidebar"></aside>
-
     <main class="dashboard-content">
-      <h1 id="greeting">Welcome to DavintoHQ</h1>
+      <h1>Welcome to DavintoHQ</h1>
 
-      <div class="button-grid">
-        <a href="blog.html" class="btn-feature"><i data-lucide="file-text"></i><span>Blog</span></a>
-        <a href="private-chat.html" class="btn-feature"><i data-lucide="message-square"></i><span>Private Chat</span></a>
-        <a href="global-chat.html" class="btn-feature"><i data-lucide="globe"></i><span>Global Chat</span></a>
-        <a href="announcements.html" class="btn-feature"><i data-lucide="megaphone"></i><span>Announcements</span></a>
-        <a href="files.html" class="btn-feature"><i data-lucide="folder-open"></i><span>Files</span></a>
-        <a href="reports.html" class="btn-feature"><i data-lucide="bar-chart"></i><span>Reports</span></a>
-        <a href="search.html" class="btn-feature"><i data-lucide="search"></i><span>Search</span></a>
-        <a href="profile.html" class="btn-feature"><i data-lucide="user"></i><span>My Profile</span></a>
+      <div class="quick-links">
+        <a href="blog.html" class="dashboard-card">Blog</a>
+        <a href="private-chat.html" class="dashboard-card">Private Chat</a>
+        <a href="global-chat.html" class="dashboard-card">Global Chat</a>
+        <a href="announcements.html" class="dashboard-card">Announcements</a>
+        <a href="files.html" class="dashboard-card">File Sharing</a>
+        <a href="reports.html" class="dashboard-card">Reports</a>
+        <a href="search.html" class="dashboard-card">Global Search</a>
+        <a href="profile.html" class="dashboard-card">My Profile</a>
+        <a href="admin.html" class="dashboard-card" id="adminLink" style="display:none;">Admin Panel</a>
       </div>
+
+      <section class="dashboard-stats">
+        <h2>Site Overview</h2>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <h3>Total Users</h3>
+            <p id="totalUsers">Loading...</p>
+          </div>
+          <div class="stat-box">
+            <h3>Active Chats</h3>
+            <p id="activeChats">Loading...</p>
+          </div>
+          <div class="stat-box">
+            <h3>Announcements</h3>
+            <p id="announcementCount">Loading...</p>
+          </div>
+        </div>
+      </section>
     </main>
   </div>
 
   <script>
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    firebase.auth().onAuthStateChanged(user => {
+      if (!user) return (window.location.href = 'index.html');
+      const db = firebase.firestore();
 
-    auth.onAuthStateChanged(user => {
-      if (!user) return location.href = 'index.html';
-      const uid = user.uid;
-      db.collection('users').doc(uid).get().then(doc => {
-        const name = doc.data()?.name || 'User';
-        document.getElementById('greeting').innerText = `Welcome, ${name}`;
+      // Show admin panel link if admin or owner
+      db.collection('users').doc(user.uid).get().then(doc => {
+        const userData = doc.data();
+        if (userData?.role === 'admin' || userData?.role === 'owner') {
+          document.getElementById('adminLink').style.display = 'inline-block';
+        }
       });
-      lucide.createIcons();
+
+      // Load stats
+      db.collection('users').get().then(snapshot => {
+        document.getElementById('totalUsers').innerText = snapshot.size;
+      });
+
+      db.collection('globalChats').get().then(snapshot => {
+        document.getElementById('activeChats').innerText = snapshot.size;
+      });
+
+      db.collection('announcements').get().then(snapshot => {
+        document.getElementById('announcementCount').innerText = snapshot.size;
+      });
     });
   </script>
-
-  <style>
-    body {
-      font-family: sans-serif;
-      background: #f6f7fb;
-      margin: 0;
-      padding: 0;
-    }
-
-    .dashboard-content {
-      padding: 2rem;
-    }
-
-    h1 {
-      margin-bottom: 1.5rem;
-    }
-
-    .button-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-    }
-
-    .btn-feature {
-      background: #ffffff;
-      border: 1px solid #e0e0e0;
-      border-radius: 1rem;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      text-decoration: none;
-      color: #333;
-      transition: 0.3s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06);
-    }
-
-    .btn-feature:hover {
-      background-color: #f0f4f8;
-      transform: translateY(-2px);
-    }
-
-    .btn-feature i {
-      width: 32px;
-      height: 32px;
-      margin-bottom: 0.5rem;
-      color: #007bff;
-    }
-
-    .btn-feature span {
-      font-size: 0.9rem;
-      font-weight: 500;
-    }
-  </style>
 </body>
 </html>

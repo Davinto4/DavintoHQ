@@ -1,90 +1,96 @@
 <!DOCTYPE html><html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Referrals - DavintoHQ</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Sharing - DavintoHQ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root[data-theme='dark'] {
-      --bg: #111;
-      --text: #eee;
-      --card: #1e1e1e;
-      --accent: #10b981;
+      --bg: #1f1f1f;
+      --text: #f5f5f5;
+      --card: #2c2c2c;
     }
     :root[data-theme='light'] {
-      --bg: #f4f4f4;
+      --bg: #f9f9f9;
       --text: #222;
-      --card: #fff;
-      --accent: #007bff;
+      --card: #ffffff;
     }
     body {
       font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 2rem;
       background: var(--bg);
       color: var(--text);
-      transition: all 0.3s ease;
+      padding: 2rem;
+      transition: background 0.3s ease, color 0.3s ease;
     }
     h1 {
       text-align: center;
+      margin-bottom: 2rem;
     }
-    .card {
-      max-width: 600px;
-      margin: 2rem auto;
+    .container {
+      max-width: 700px;
+      margin: auto;
       background: var(--card);
       padding: 2rem;
-      border-radius: 1rem;
+      border-radius: 10px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    input[type="text"] {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      margin-top: 1rem;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 0.7rem 1.2rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .ref-info {
+    .file-list {
       margin-top: 1.5rem;
     }
-    .theme-toggle {
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      margin-bottom: 0.75rem;
+      background: #eee;
+      border-radius: 6px;
+    }
+    .upload-section input[type="file"] {
+      display: block;
+      margin-bottom: 1rem;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    #themeToggle {
       position: fixed;
       top: 1rem;
       right: 1rem;
-      background: var(--card);
-      color: var(--text);
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
+      background: #444;
     }
   </style>
 </head>
 <body>
-  <button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Theme</button>  <h1><i class="fas fa-user-friends"></i> Referral Program</h1>
-  <div class="card">
-    <p>Invite your friends to DavintoHQ and earn <strong>10%</strong> commission when they make a website order!</p><label for="referralLink"><i class="fas fa-link"></i> Your Referral Link</label>
-<input type="text" id="referralLink" readonly />
-
-<button onclick="copyLink()"><i class="fas fa-copy"></i> Copy Link</button>
-
-<div class="ref-info">
-  <p><i class="fas fa-users"></i> <strong>Referrals:</strong> <span id="refCount">0</span></p>
-  <p><i class="fas fa-coins"></i> <strong>Earnings:</strong> ₦<span id="refEarnings">0.00</span></p>
-</div>
-
+  <button id="themeToggle"><i class="fas fa-adjust"></i> Theme</button>
+  <h1><i class="fas fa-folder-open"></i> File Sharing</h1>
+  <div class="container">
+    <div class="upload-section">
+      <input type="file" id="fileInput">
+      <button onclick="uploadFile()"><i class="fas fa-upload"></i> Upload</button>
+    </div>
+    <div class="file-list" id="fileList">
+      <!-- Files will appear here -->
+    </div>
   </div>  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
-    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL,
+      listAll,
+      deleteObject
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-storage.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -92,38 +98,68 @@
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
     };
 
     const app = initializeApp(firebaseConfig);
+    const storage = getStorage(app);
     const auth = getAuth(app);
-    const db = getFirestore(app);
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return window.location.href = 'index.html';
+    const fileInput = document.getElementById("fileInput");
+    const fileList = document.getElementById("fileList");
 
-      const uid = user.uid;
-      const referralLink = `${window.location.origin}/signup.html?ref=${uid}`;
-      document.getElementById("referralLink").value = referralLink;
+    function uploadFile() {
+      const file = fileInput.files[0];
+      if (!file) return alert("No file selected.");
 
-      const userDoc = await getDoc(doc(db, "users", uid));
-      const data = userDoc.exists() ? userDoc.data() : {};
-
-      document.getElementById("refCount").textContent = data.referrals?.length || 0;
-      document.getElementById("refEarnings").textContent = (data.earnings || 0).toFixed(2);
-    });
-
-    window.copyLink = () => {
-      const input = document.getElementById("referralLink");
-      input.select();
-      document.execCommand("copy");
-      alert("Referral link copied!");
+      const fileRef = ref(storage, `sharedFiles/${Date.now()}_${file.name}`);
+      uploadBytes(fileRef, file).then(() => {
+        alert("Uploaded successfully!");
+        loadFiles();
+      });
     }
-  </script>  <script>
-    function toggleTheme() {
+
+    function loadFiles() {
+      const listRef = ref(storage, 'sharedFiles');
+      fileList.innerHTML = "Loading...";
+      listAll(listRef).then(res => {
+        fileList.innerHTML = "";
+        res.items.forEach(async itemRef => {
+          const url = await getDownloadURL(itemRef);
+          const name = itemRef.name;
+          const el = document.createElement("div");
+          el.className = "file-item";
+          el.innerHTML = `
+            <span><i class="fas fa-file"></i> ${name}</span>
+            <span>
+              <a href="${url}" target="_blank"><i class="fas fa-download"></i></a>
+              <button onclick="deleteFile('${name}')"><i class='fas fa-trash'></i></button>
+            </span>
+          `;
+          fileList.appendChild(el);
+        });
+      });
+    }
+
+    window.deleteFile = function(name) {
+      if (!confirm("Delete this file?")) return;
+      const fileRef = ref(storage, `sharedFiles/${name}`);
+      deleteObject(fileRef).then(() => {
+        alert("File deleted.");
+        loadFiles();
+      });
+    }
+
+    document.getElementById("themeToggle").onclick = () => {
       const root = document.documentElement;
-      const current = root.getAttribute("data-theme");
-      root.setAttribute("data-theme", current === "light" ? "dark" : "light");
-    }
+      const current = root.getAttribute('data-theme');
+      root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+    };
+
+    onAuthStateChanged(auth, user => {
+      if (!user) window.location.href = 'index.html';
+      else loadFiles();
+    });
   </script></body>
 </html>

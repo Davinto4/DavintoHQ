@@ -1,121 +1,119 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html><html lang="en" data-theme="light">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Announcements</title>
-  <link rel="stylesheet" href="styles.css" />
-  <script type="module">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements - DavintoHQ</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root[data-theme='dark'] {
+      --bg: #121212;
+      --text: #e0e0e0;
+      --card: #1e1e1e;
+    }
+    :root[data-theme='light'] {
+      --bg: #f9f9f9;
+      --text: #222;
+      --card: #ffffff;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      transition: all 0.3s ease;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    #announcementList {
+      display: grid;
+      gap: 1rem;
+    }
+    .announcement {
+      background: var(--card);
+      padding: 1rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    .announcement h3 {
+      margin: 0 0 0.5rem;
+    }
+    .announcement .meta {
+      font-size: 0.9rem;
+      color: gray;
+    }
+    #themeToggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: #444;
+      color: #fff;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .category-badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.3rem;
+      background: crimson;
+      color: white;
+      display: inline-block;
+      margin-left: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggle"><i class="fas fa-adjust"></i> Theme</button>
+  <h1><i class="fas fa-bullhorn"></i> Announcements</h1>
+  <div id="announcementList">Loading...</div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
       getFirestore,
       collection,
-      query,
-      orderBy,
-      onSnapshot,
-      doc,
-      deleteDoc,
-      getDoc
+      getDocs
     } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";const firebaseConfig = {
-  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-  authDomain: "davintohq.firebaseapp.com",
-  projectId: "davintohq",
-  storageBucket: "davintohq.firebasestorage.app",
-  messagingSenderId: "156992522736",
-  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-  measurementId: "G-3GXFN90T6S"
-};
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-const container = document.getElementById("announcementList");
-let currentUserEmail = null;
-let isAdmin = false;
-
-onAuthStateChanged(auth, async (user) => {
-  if (user) {
-    currentUserEmail = user.email;
-    const userDoc = await getDoc(doc(db, "users", user.uid));
-    if (user.email === "macdinodavinto@gmail.com" || (userDoc.exists() && userDoc.data().role === "admin")) {
-      isAdmin = true;
-    }
-  }
-});
-
-const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
-
-onSnapshot(q, (snapshot) => {
-  container.innerHTML = "";
-  snapshot.forEach((docSnap) => {
-    const data = docSnap.data();
-    const div = document.createElement("div");
-    div.classList.add("announcement");
-    if (data.category === "urgent") {
-      div.classList.add("urgent");
-    }
-    div.innerHTML = `
-      <h3>${data.title}</h3>
-      <p>${data.content}</p>
-      <small>${new Date(data.timestamp?.toDate()).toLocaleString()}</small>
-      <span class="tag">${data.category}</span>
-      ${(isAdmin || currentUserEmail === "macdinodavinto@gmail.com") ? `<button class="deleteBtn" data-id="${docSnap.id}">Delete</button>` : ""}
-    `;
-    container.appendChild(div);
-  });
-
-  document.querySelectorAll(".deleteBtn").forEach((btn) => {
-    btn.onclick = async () => {
-      const id = btn.dataset.id;
-      if (confirm("Delete this announcement?")) {
-        await deleteDoc(doc(db, "announcements", id));
-      }
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
-  });
-});
 
-  </script>
-</head>
-<body>
-  <h1>📢 Announcements</h1>
-  <div id="announcementList"></div>  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f9f9f9;
-      padding: 1rem;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const listEl = document.getElementById("announcementList");
+
+    const loadAnnouncements = async () => {
+      const snap = await getDocs(collection(db, "announcements"));
+      listEl.innerHTML = "";
+      snap.forEach(doc => {
+        const a = doc.data();
+        const div = document.createElement("div");
+        div.className = "announcement";
+        div.innerHTML = `
+          <h3>${a.title} <span class="category-badge">${a.category || 'info'}</span></h3>
+          <p class="meta">Posted by ${a.author || 'Unknown'} on ${new Date(a.timestamp?.seconds * 1000).toLocaleDateString()}</p>
+          <p>${a.body}</p>
+        `;
+        listEl.appendChild(div);
+      });
     }
-    .announcement {
-      background: white;
-      margin-bottom: 1rem;
-      padding: 1rem;
-      border-radius: 8px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-      position: relative;
-    }
-    .urgent {
-      border-left: 5px solid red;
-    }
-    .tag {
-      display: inline-block;
-      background: #eee;
-      padding: 0.2rem 0.5rem;
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-    }
-    .deleteBtn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: crimson;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style></body>
+
+    loadAnnouncements();
+
+    document.getElementById("themeToggle").onclick = () => {
+      const root = document.documentElement;
+      const current = root.getAttribute("data-theme");
+      root.setAttribute("data-theme", current === "light" ? "dark" : "light");
+    };
+  </script></body>
 </html>

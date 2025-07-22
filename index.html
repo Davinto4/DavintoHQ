@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ Login</title>
   <link rel="stylesheet" href="styles.css" />
-  <!-- Firebase App (non-module) -->
+  <!-- Firebase (no module) -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
@@ -16,21 +16,22 @@
     <div class="form">
       <input type="email" id="email" placeholder="Email" />
       <input type="password" id="password" placeholder="Password" />
-      <input type="text" id="username" placeholder="Username (for signup only)" />
+      <input type="text" id="username" placeholder="Username (for sign up only)" />
 
       <button id="loginBtn">Login</button>
       <button id="signupBtn">Sign Up</button>
 
-      <p id="authMessage"></p>
+      <p id="authMessage" style="color: red;"></p>
     </div>
   </div>
 
   <script>
+    // ✅ Initialize Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
       authDomain: "izuchukwu-foods.firebaseapp.com",
       projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      storageBucket: "izuchukwu-foods.appspot.com",
       messagingSenderId: "811147638426",
       appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
     };
@@ -39,21 +40,24 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    document.getElementById("loginBtn").onclick = async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
+    // ✅ Login
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
       try {
         await auth.signInWithEmailAndPassword(email, password);
         window.location.href = "dashboard.html";
       } catch (error) {
         document.getElementById("authMessage").innerText = error.message;
       }
-    };
+    });
 
-    document.getElementById("signupBtn").onclick = async () => {
-      const email = document.getElementById("email").value;
-      const password = document.getElementById("password").value;
-      const username = document.getElementById("username").value || "User";
+    // ✅ Signup
+    document.getElementById("signupBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const username = document.getElementById("username").value.trim() || "Anonymous";
+
       try {
         const result = await auth.createUserWithEmailAndPassword(email, password);
         const user = result.user;
@@ -67,7 +71,7 @@
       } catch (error) {
         document.getElementById("authMessage").innerText = error.message;
       }
-    };
+    });
   </script>
 </body>
 </html>

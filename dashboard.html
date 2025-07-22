@@ -1,57 +1,79 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
-      getAuth, onAuthStateChanged, signOut
+      getAuth,
+      onAuthStateChanged,
+      signOut
     } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
     import {
-      getFirestore, doc, getDoc
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+      getFirestore,
+      doc,
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";const firebaseConfig = {
+  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+  authDomain: "davintohq.firebaseapp.com",
+  projectId: "davintohq",
+  storageBucket: "davintohq.firebasestorage.app",
+  messagingSenderId: "156992522736",
+  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+  measurementId: "G-3GXFN90T6S"
+};
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.firebasestorage.app",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
-    };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return (window.location.href = "index.html");
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return (window.location.href = "index.html");
-      const userDoc = await getDoc(doc(db, "users", user.uid));
-      const userData = userDoc.exists() ? userDoc.data() : {};
-      const role = userData.role || "user";
+  const userDoc = await getDoc(doc(db, "users", user.uid));
+  const userData = userDoc.exists() ? userDoc.data() : {};
+  const role = userData.role || "user";
 
-      document.getElementById("adminBtn").style.display =
-        user.email === "macdinodavinto@gmail.com" || role === "admin" || role === "owner"
-          ? "block"
-          : "none";
-    });
+  document.getElementById("adminBtn").style.display =
+    user.email === "macdinodavinto@gmail.com" || role === "admin" || role === "owner"
+      ? "block"
+      : "none";
+});
 
-    document.getElementById("logoutBtn").onclick = () => {
-      signOut(auth).then(() => {
-        window.location.href = "index.html";
-      });
-    };
+document.getElementById("logoutBtn").onclick = () => {
+  signOut(auth).then(() => {
+    window.location.href = "index.html";
+  });
+};
+
+document.getElementById("themeToggle").onclick = () => {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
+}
+
   </script>
   <style>
+    :root[data-theme='dark'] {
+      --bg: #1f1f1f;
+      --text: #f5f5f5;
+      --card: #2c2c2c;
+    }
+    :root[data-theme='light'] {
+      --bg: #f0f2f5;
+      --text: #2c3e50;
+      --card: #ffffff;
+    }
     body {
       font-family: Arial, sans-serif;
-      background: #f0f2f5;
+      background: var(--bg);
+      color: var(--text);
       margin: 0;
       padding: 2rem;
+      transition: background 0.3s ease, color 0.3s ease;
     }
     h1 {
       text-align: center;
@@ -60,24 +82,25 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
       gap: 1rem;
-      margin-top: 1rem;
+      margin-top: 2rem;
     }
     .card {
-      background: white;
+      background: var(--card);
       padding: 1.5rem;
       text-align: center;
       border-radius: 1rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s;
+      transition: transform 0.2s ease, background 0.3s ease;
       cursor: pointer;
     }
     .card:hover {
       transform: translateY(-5px);
     }
-    #logoutBtn {
+    #logoutBtn, #themeToggle {
       position: fixed;
       top: 1rem;
       right: 1rem;
+      margin-left: 1rem;
       background: crimson;
       color: white;
       padding: 0.5rem 1rem;
@@ -85,13 +108,16 @@
       border-radius: 5px;
       cursor: pointer;
     }
+    #themeToggle {
+      right: 6rem;
+      background: #333;
+    }
     .hidden {
       display: none;
     }
     .category-title {
       margin-top: 3rem;
       font-size: 1.5rem;
-      color: #333;
       border-bottom: 2px solid #ccc;
       padding-bottom: 0.3rem;
     }
@@ -99,51 +125,42 @@
 </head>
 <body>
   <button id="logoutBtn">Logout</button>
-  <h1>📊 DavintoHQ Dashboard</h1>
-
-  <!-- Company Tools -->
-  <div class="category-title">🔧 Company Tools</div>
+  <button id="themeToggle"><i class="fas fa-adjust"></i> Theme</button>
+  <h1><i class="fas fa-chart-line"></i> DavintoHQ Dashboard</h1>  <div class="category-title"><i class="fas fa-tools"></i> Company Tools</div>
   <div class="grid">
-    <div class="card" onclick="location.href='referrals.html'">🤝 Referrals (Earn 10%)</div>
-    <div class="card" onclick="location.href='files.html'">📁 File Sharing</div>
-    <div class="card" onclick="location.href='announcements.html'">📢 Announcements</div>
-    <div class="card" onclick="location.href='settings.html'">⚙️ Company Settings</div>
-  </div>
-
-  <!-- Social Features -->
-  <div class="category-title">🌐 Social Network</div>
+    <div class="card" onclick="location.href='referrals.html'"><i class="fas fa-user-friends"></i> Referrals</div>
+    <div class="card" onclick="location.href='files.html'"><i class="fas fa-folder-open"></i> File Sharing</div>
+    <div class="card" onclick="location.href='announcements.html'"><i class="fas fa-bullhorn"></i> Announcements</div>
+    <div class="card" onclick="location.href='settings.html'"><i class="fas fa-cogs"></i> Settings</div>
+  </div>  <div class="category-title"><i class="fas fa-globe"></i> Social Features</div>
   <div class="grid">
-    <div class="card" onclick="location.href='global-chat.html'">💬 Global Chat</div>
-    <div class="card" onclick="location.href='private-chat.html'">📱 Private Chat</div>
-    <div class="card" onclick="location.href='feed.html'">📰 News Feed</div>
-    <div class="card" onclick="location.href='blog.html'">📝 Blog</div>
-    <div class="card" onclick="location.href='groups.html'">👥 Groups</div>
-    <div class="card" onclick="location.href='profile.html'">🙋‍♂️ My Profile</div>
-  </div>
-
-  <!-- User Utilities -->
-  <div class="category-title">🧰 Personal Tools</div>
+    <div class="card" onclick="location.href='global-chat.html'"><i class="fas fa-comments"></i> Global Chat</div>
+    <div class="card" onclick="location.href='private-chat.html'"><i class="fas fa-comment-dots"></i> Private Chat</div>
+    <div class="card" onclick="location.href='feed.html'"><i class="fas fa-rss"></i> Social Feed</div>
+    <div class="card" onclick="location.href='blog.html'"><i class="fas fa-blog"></i> Blog</div>
+    <div class="card" onclick="location.href='groups.html'"><i class="fas fa-users"></i> Groups</div>
+    <div class="card" onclick="location.href='profile.html'"><i class="fas fa-user"></i> My Profile</div>
+  </div>  <div class="category-title"><i class="fas fa-book"></i> Learning & Resources</div>
   <div class="grid">
-    <div class="card" onclick="location.href='search.html'">🔍 User Search</div>
-    <div class="card" onclick="location.href='notifications.html'">🔔 Notifications</div>
-    <div class="card" onclick="location.href='tasks.html'">📅 Tasks</div>
-    <div class="card" onclick="location.href='calendar.html'">📆 Calendar</div>
-    <div class="card" onclick="location.href='support.html'">🎧 Support</div>
-  </div>
-
-  <!-- Educational Tools -->
-  <div class="category-title">📚 Learning & Development</div>
+    <div class="card" onclick="location.href='courses.html'"><i class="fas fa-graduation-cap"></i> Courses</div>
+    <div class="card" onclick="location.href='docs.html'"><i class="fas fa-file-alt"></i> Documentation</div>
+    <div class="card" onclick="location.href='tips.html'"><i class="fas fa-lightbulb"></i> Tips</div>
+    <div class="card" onclick="location.href='web-tools.html'"><i class="fas fa-flask"></i> Web Tools</div>
+  </div>  <div class="category-title"><i class="fas fa-book-open"></i> Books & Novels</div>
   <div class="grid">
-    <div class="card" onclick="location.href='courses.html'">📖 Courses</div>
-    <div class="card" onclick="location.href='quizzes.html'">🧠 Quizzes</div>
-    <div class="card" onclick="location.href='tutorials.html'">🎥 Tutorials</div>
-    <div class="card" onclick="location.href='notes.html'">📝 Notes</div>
-  </div>
-
-  <!-- Admin Panel -->
-  <div class="category-title">🛠️ Admin Access</div>
+    <div class="card" onclick="location.href='write-book.html'"><i class="fas fa-pen-nib"></i> Write a Book</div>
+    <div class="card" onclick="location.href='read-books.html'"><i class="fas fa-book-reader"></i> Read Books</div>
+    <div class="card" onclick="location.href='my-library.html'"><i class="fas fa-bookmark"></i> My Library</div>
+  </div>  <div class="category-title"><i class="fas fa-toolbox"></i> User Utilities</div>
   <div class="grid">
-    <div class="card hidden" id="adminBtn" onclick="location.href='admin.html'">🛠️ Admin Panel</div>
+    <div class="card" onclick="location.href='search.html'"><i class="fas fa-search"></i> User Search</div>
+    <div class="card" onclick="location.href='notifications.html'"><i class="fas fa-bell"></i> Notifications</div>
+    <div class="card" onclick="location.href='tasks.html'"><i class="fas fa-tasks"></i> Tasks</div>
+    <div class="card" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt"></i> Calendar</div>
+    <div class="card" onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</div>
+  </div>  <div class="category-title"><i class="fas fa-user-shield"></i> Admin Access</div>
+  <div class="grid">
+    <div class="card hidden" id="adminBtn" onclick="location.href='admin.html'"><i class="fas fa-tools"></i> Admin Panel</div>
   </div>
 </body>
 </html>

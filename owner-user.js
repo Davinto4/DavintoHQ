@@ -1,35 +1,28 @@
-// create-owner-user.js
-import { initializeApp } from "firebase/app";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+// create-owner-user-admin.js
+import admin from 'firebase-admin';
+import { readFileSync } from 'fs';
 
-// Your Firebase config
-const firebaseConfig = {
-  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-  authDomain: "davintohq.firebaseapp.com",
-  projectId: "davintohq",
-  storageBucket: "davintohq.appspot.com",
-  messagingSenderId: "156992522736",
-  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-  measurementId: "G-3GXFN90T6S"
-};
+// Make sure your service account JSON file is in the same folder
+const serviceAccount = JSON.parse(readFileSync('./serviceAccountKey.json', 'utf8'));
 
-// Initialize Firebase app
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+});
 
 async function createOwnerUser() {
   try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      "macdinodavinto@gmail.com",
-      "08022664487@Mac"
-    );
-    console.log("Owner user created:", userCredential.user.uid);
+    const userRecord = await admin.auth().createUser({
+      email: 'macdinodavinto@gmail.com',
+      password: '08022664487@Mac',
+      emailVerified: true,
+      displayName: 'Davinto Owner',
+    });
+    console.log('Owner user created with UID:', userRecord.uid);
   } catch (error) {
-    if (error.code === 'auth/email-already-in-use') {
-      console.log("User already exists.");
+    if (error.code === 'auth/email-already-exists') {
+      console.log('User already exists.');
     } else {
-      console.error("Error creating user:", error.message);
+      console.error('Error creating user:', error);
     }
   }
 }

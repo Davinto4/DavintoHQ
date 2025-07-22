@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Referrals - DavintoHQ</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f0f2f5;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 1rem;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    .referral-list {
+      margin-top: 2rem;
+    }
+    .referral-item {
+      padding: 0.5rem;
+      border-bottom: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <h1>Referral Center</h1>
+  <div class="container">
+    <p><strong>Your Referral Link:</strong></p>
+    <input type="text" id="referralLink" readonly />
+    <button onclick="copyReferral()">Copy Link</button>
+
+    <div class="referral-list" id="referrals"></div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+    import {
+      getFirestore, doc, getDoc, collection, query, where, getDocs
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.firebasestorage.app",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) return (window.location.href = "index.html");
+      const referralLink = `${window.location.origin}/index.html?ref=${user.uid}`;
+      document.getElementById("referralLink").value = referralLink;
+
+      // Fetch users referred by this user
+      const q = query(collection(db, "users"), where("referredBy", "==", user.uid));
+      const snapshot = await getDocs(q);
+
+      let html = `<h3>People You Referred:</h3>`;
+      snapshot.forEach(doc => {
+        const u = doc.data();
+        html += `
+          <div class="referral-item">
+            <strong>${u.displayName || u.email || "Anonymous"}</strong><br/>
+            Reward Status: <em>${u.rewardPaid ? "Paid ✅" : "Pending 💰"}</em>
+          </div>`;
+      });
+      document.getElementById("referrals").innerHTML = html;
+    });
+
+    function copyReferral() {
+      const input = document.getElementById("referralLink");
+      input.select();
+      document.execCommand("copy");
+      alert("Referral link copied!");
+    }
+  </script>
+</body>
+</html>

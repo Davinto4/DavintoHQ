@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Reports - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex min-h-screen">
+  <div id="sidebar"></div>
+
+  <main class="flex-1 p-6 max-w-5xl mx-auto">
+    <h1 class="text-2xl font-bold text-blue-700 mb-6">📊 Reports & Analytics</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="text-lg font-semibold mb-2">Total Users</h2>
+        <p id="totalUsers" class="text-3xl text-blue-600">0</p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow p-4">
+        <h2 class="text-lg font-semibold mb-2">Total Admins</h2>
+        <p id="totalAdmins" class="text-3xl text-green-600">0</p>
+      </div>
+    </div>
+  </main>
+
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+    import {
+      getFirestore, collection, getDocs
+    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore();
+    const auth = getAuth();
+
+    const totalUsersEl = document.getElementById("totalUsers");
+    const totalAdminsEl = document.getElementById("totalAdmins");
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return location.href = "index.html";
+      const snap = await getDocs(collection(db, "users"));
+      const users = snap.docs.map(doc => doc.data());
+      totalUsersEl.textContent = users.length;
+      totalAdminsEl.textContent = users.filter(u => ["admin", "owner"].includes(u.role)).length;
+    });
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script>
+</body>
+</html>

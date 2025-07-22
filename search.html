@@ -1,21 +1,18 @@
-<!-- search.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Search - DavintoHQ</title>
+  <title>User Search - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="flex bg-gray-100 min-h-screen">
+<body class="bg-gray-100 flex min-h-screen">
   <div id="sidebar"></div>
 
-  <main class="flex-1 p-4">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">User Search</h1>
-    <input id="searchInput" type="text" placeholder="Search by name/email/phone"
-      class="w-full border rounded px-4 py-2 mb-4" />
-
-    <div id="results" class="space-y-4"></div>
+  <main class="flex-1 p-6 max-w-3xl mx-auto">
+    <h2 class="text-2xl font-bold text-blue-700 mb-4">🔍 Search Users</h2>
+    <input type="text" id="searchInput" placeholder="Search by email, phone, or username" class="w-full p-2 border rounded mb-4" />
+    <div id="searchResults" class="space-y-3"></div>
   </main>
 
   <script type="module">
@@ -40,51 +37,37 @@
     const db = getFirestore();
     const auth = getAuth();
 
-    const searchInput = document.getElementById("searchInput");
-    const results = document.getElementById("results");
+    const input = document.getElementById("searchInput");
+    const resultsDiv = document.getElementById("searchResults");
 
-    let currentUser = null;
+    onAuthStateChanged(auth, async user => {
+      if (!user) return location.href = "index.html";
 
-    const renderUser = (user) => {
-      const div = document.createElement("div");
-      div.className = "bg-white p-4 rounded shadow";
+      const usersSnapshot = await getDocs(collection(db, "users"));
+      const users = [];
+      usersSnapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
 
-      div.innerHTML = `
-        <p><strong>Username:</strong> ${user.username || 'N/A'}</p>
-        <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${user.phone || 'N/A'}</p>
-        <p><strong>Role:</strong> ${user.role || 'member'}</p>
-        <div class="mt-2 flex gap-2">
-          <a href="profile.html?uid=${user.uid}" class="bg-blue-600 text-white px-3 py-1 rounded">View Profile</a>
-          ${user.uid !== currentUser?.uid ? `<a href="private-chat.html?uid=${user.uid}" class="bg-green-600 text-white px-3 py-1 rounded">Message</a>` : ''}
-        </div>
-      `;
-      results.appendChild(div);
-    };
-
-    const loadUsers = async () => {
-      const snapshot = await getDocs(collection(db, "users"));
-      return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
-    };
-
-    const searchUsers = async (query) => {
-      results.innerHTML = '';
-      const users = await loadUsers();
-      const filtered = users.filter(user =>
-        user.username?.toLowerCase().includes(query.toLowerCase()) ||
-        user.email?.toLowerCase().includes(query.toLowerCase()) ||
-        user.phone?.includes(query)
-      );
-      filtered.forEach(renderUser);
-    };
-
-    onAuthStateChanged(auth, user => {
-      currentUser = user;
-      searchUsers('');
-    });
-
-    searchInput.addEventListener("input", (e) => {
-      searchUsers(e.target.value);
+      input.addEventListener("input", () => {
+        const q = input.value.toLowerCase();
+        resultsDiv.innerHTML = "";
+        const filtered = users.filter(u =>
+          (u.email || "").toLowerCase().includes(q) ||
+          (u.phone || "").toLowerCase().includes(q) ||
+          (u.username || "").toLowerCase().includes(q)
+        );
+        for (const u of filtered) {
+          const div = document.createElement("div");
+          div.className = "bg-white p-3 rounded shadow flex justify-between items-center";
+          div.innerHTML = `
+            <div>
+              <p><strong>${u.username || "No Username"}</strong></p>
+              <p>${u.email || "No Email"} · ${u.phone || "No Phone"}</p>
+            </div>
+            <a href="private-chat.html?uid=${u.id}" class="text-blue-600 underline">Message</a>
+          `;
+          resultsDiv.appendChild(div);
+        }
+      });
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());

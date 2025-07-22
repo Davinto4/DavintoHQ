@@ -1,41 +1,38 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <title>Manage Admins - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    body {
-      display: flex;
-      min-height: 100vh;
-    }
-    #sidebar {
-      width: 220px;
-    }
-    #main-content {
-      flex: 1;
-      padding: 1rem;
-    }
-  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
-<body>
+<body class="flex min-h-screen bg-gray-100">
   <div id="sidebar"></div>
-  <div id="main-content" class="bg-gray-100">
-    <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
-      <h1 class="text-2xl font-bold text-blue-700 mb-4">🔧 Manage Admins</h1>
-      <p class="text-sm text-gray-600 mb-4">Only the owner can access this page.</p><div class="flex space-x-2 mb-4">
-    <input id="adminUID" class="border px-3 py-2 w-full rounded" type="text" placeholder="Enter Admin UID">
-    <button id="addBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add</button>
-  </div>
 
-  <h2 class="text-lg font-semibold mt-6">Current Admins</h2>
-  <ul id="adminList" class="list-disc pl-5 mt-2 space-y-1 text-gray-700"></ul>
-</div>
+  <main class="flex-1 p-6">
+    <h1 class="text-2xl font-bold mb-4 text-blue-700">🛡️ Manage Admins</h1>
 
-  </div>  <script type="module">
+    <div class="flex items-center space-x-4 mb-4">
+      <input id="searchInput" type="text" placeholder="Search by username, email, or phone"
+             class="p-2 border rounded w-full max-w-md" />
+      <label class="flex items-center space-x-2">
+        <input type="checkbox" id="showOnlyAdmins" />
+        <span>Show only admins</span>
+      </label>
+      <button id="exportCSV" class="bg-green-600 text-white px-3 py-1 rounded">Export CSV</button>
+      <button id="exportPDF" class="bg-red-600 text-white px-3 py-1 rounded">Export PDF</button>
+    </div>
+
+    <div id="results" class="space-y-4"></div>
+  </main>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc, deleteDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getFirestore, collection, getDocs, doc, setDoc, deleteDoc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -53,51 +50,128 @@
     const ownerEmail = "macdinodavinto@gmail.com";
     const ownerPhone = "+2348169045105";
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return location.href = "index.html";
-      const emailOrPhone = user.email || user.phoneNumber;
-      if (emailOrPhone !== ownerEmail && emailOrPhone !== ownerPhone) {
-        alert("Access denied. Owner only.");
-        return location.href = "index.html";
+    let allUsers = [];
+    let adminUIDs = new Set();
+
+    const searchInput = document.getElementById("searchInput");
+    const resultsDiv = document.getElementById("results");
+    const showOnlyAdmins = document.getElementById("showOnlyAdmins");
+
+    function renderResults() {
+      const query = searchInput.value.trim().toLowerCase();
+      const onlyAdmins = showOnlyAdmins.checked;
+
+      const filtered = allUsers.filter(user => {
+        const match = user.username.toLowerCase().includes(query)
+          || user.email.toLowerCase().includes(query)
+          || user.phone.toLowerCase().includes(query);
+
+        return match && (!onlyAdmins || adminUIDs.has(user.uid));
+      });
+
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = "<p class='text-gray-500'>No users found.</p>";
+        return;
       }
 
-      loadAdmins();
-
-      document.getElementById("addBtn").onclick = async () => {
-        const uid = document.getElementById("adminUID").value.trim();
-        if (!uid) return alert("Enter a UID");
-
-        await setDoc(doc(db, "admins", uid), { addedAt: Date.now() });
-        alert("Admin added.");
-        document.getElementById("adminUID").value = "";
-        loadAdmins();
-      };
-    });
-
-    async function loadAdmins() {
-      const snap = await getDocs(collection(db, "admins"));
-      const list = document.getElementById("adminList");
-      list.innerHTML = "";
-      snap.forEach(docSnap => {
-        const uid = docSnap.id;
-        const li = document.createElement("li");
-        li.textContent = uid;
-        li.className = "flex justify-between items-center";
-
-        const delBtn = document.createElement("button");
-        delBtn.textContent = "Remove";
-        delBtn.className = "ml-4 text-red-600 hover:underline text-sm";
-        delBtn.onclick = async () => {
-          await deleteDoc(doc(db, "admins", uid));
-          alert("Admin removed.");
-          loadAdmins();
-        };
-
-        li.appendChild(delBtn);
-        list.appendChild(li);
-      });
+      resultsDiv.innerHTML = filtered.map(user => `
+        <div class="bg-white shadow p-4 rounded flex justify-between items-center">
+          <div>
+            <p><strong>Username:</strong> ${user.username}</p>
+            <p><strong>Email:</strong> ${user.email}</p>
+            <p><strong>Phone:</strong> ${user.phone}</p>
+            <p><strong>Role:</strong> ${adminUIDs.has(user.uid) ? "admin" : "user"}</p>
+          </div>
+          <div>
+            <button onclick="${adminUIDs.has(user.uid) ?
+              `removeAdmin('${user.uid}')` : `addAdmin('${user.uid}')`}"
+              class="${adminUIDs.has(user.uid) ? 'bg-red-600' : 'bg-blue-600'} text-white px-3 py-1 rounded">
+              ${adminUIDs.has(user.uid) ? 'Remove Admin' : 'Make Admin'}
+            </button>
+          </div>
+        </div>
+      `).join('');
     }
 
+    async function loadUsersAndAdmins() {
+      const usersSnap = await getDocs(collection(db, "users"));
+      const adminsSnap = await getDocs(collection(db, "admins"));
+
+      adminUIDs = new Set(adminsSnap.docs.map(d => d.id));
+
+      allUsers = usersSnap.docs.map(doc => ({
+        uid: doc.id,
+        ...doc.data(),
+        username: doc.data().username || "(no username)",
+        email: doc.data().email || "-",
+        phone: doc.data().phone || "-"
+      }));
+
+      renderResults();
+    }
+
+    async function addAdmin(uid) {
+      await setDoc(doc(db, "admins", uid), { createdAt: Date.now() });
+      adminUIDs.add(uid);
+      renderResults();
+    }
+
+    async function removeAdmin(uid) {
+      await deleteDoc(doc(db, "admins", uid));
+      adminUIDs.delete(uid);
+      renderResults();
+    }
+
+    searchInput.addEventListener("input", renderResults);
+    showOnlyAdmins.addEventListener("change", renderResults);
+
+    document.getElementById("exportCSV").addEventListener("click", () => {
+      const rows = [["Username", "Email", "Phone", "Role"]];
+      allUsers.forEach(user => {
+        if (!adminUIDs.has(user.uid)) return;
+        rows.push([user.username, user.email, user.phone, "admin"]);
+      });
+      const csv = rows.map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "admins.csv";
+      a.click();
+    });
+
+    document.getElementById("exportPDF").addEventListener("click", async () => {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      let y = 10;
+
+      pdf.setFontSize(12);
+      pdf.text("Admin List", 10, y);
+      y += 10;
+
+      allUsers.forEach(user => {
+        if (!adminUIDs.has(user.uid)) return;
+        pdf.text(`• ${user.username} | ${user.email} | ${user.phone}`, 10, y);
+        y += 8;
+        if (y > 280) {
+          pdf.addPage();
+          y = 10;
+        }
+      });
+
+      pdf.save("admins.pdf");
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return location.href = "index.html";
+
+      const isOwner = user.email === ownerEmail || user.phoneNumber === ownerPhone;
+      if (!isOwner) return location.href = "unauthorized.html";
+
+      await loadUsersAndAdmins();
+    });
+
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script></body>
+  </script>
+</body>
 </html>

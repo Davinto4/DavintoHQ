@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -11,22 +10,19 @@
 </head>
 <body>
   <div class="auth-container">
-    <h1>DavintoHQ</h1>
+    <h1>DavintoHQ</h1><div class="form">
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <input type="text" id="username" placeholder="Username (for signup only)" />
 
-    <div class="form">
-      <input type="email" id="email" placeholder="Email" />
-      <input type="password" id="password" placeholder="Password" />
-      <input type="text" id="username" placeholder="Username (for signup only)" />
+  <button id="loginBtn">Login</button>
+  <button id="signupBtn">Sign Up</button>
+  <button id="guestBtn">Continue as Guest</button>
 
-      <button id="loginBtn">Login</button>
-      <button id="signupBtn">Sign Up</button>
-      <button id="guestBtn">Continue as Guest</button>
+  <p id="authMessage"></p>
+</div>
 
-      <p id="authMessage"></p>
-    </div>
-  </div>
-
-  <script type="module">
+  </div>  <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js';
     import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signInAnonymously } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js';
     import { getFirestore, doc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js';
@@ -89,6 +85,5 @@
         document.getElementById("authMessage").innerText = error.message;
       }
     };
-  </script>
-</body>
+  </script></body>
 </html>

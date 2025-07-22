@@ -1,39 +1,35 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Files - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Announcements - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
+<body class="bg-gray-50 flex min-h-screen">
+  <div id="sidebar"></div>  <main class="flex-1 p-6 max-w-4xl mx-auto">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">📢 Announcements</h1><form id="announcementForm" class="bg-white shadow p-4 rounded mb-6">
+  <textarea id="announcementText" class="w-full border p-2 rounded mb-2" rows="3" placeholder="Write an announcement..."></textarea>
+  <div class="flex items-center gap-2 mb-2">
+    <select id="category" class="border p-2 rounded">
+      <option value="info">Info</option>
+      <option value="event">Event</option>
+      <option value="urgent">Urgent</option>
+    </select>
+    <label class="flex items-center gap-1">
+      <input type="checkbox" id="pin" class="accent-blue-600"> Pin
+    </label>
+    <button class="bg-blue-600 text-white px-4 py-2 rounded ml-auto" type="submit">Post</button>
+  </div>
+</form>
 
-  <main class="flex-1 p-6 max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">📁 Files</h1>
+<div id="announcementsList" class="space-y-4"></div>
 
-    <div class="mb-6">
-      <input id="fileInput" type="file" class="mb-2">
-      <select id="categorySelect" class="p-2 border rounded mb-2">
-        <option value="General">General</option>
-        <option value="Reports">Reports</option>
-        <option value="Resources">Resources</option>
-      </select>
-      <input id="tagInput" type="text" placeholder="Tags (comma-separated)" class="p-2 border rounded mb-2">
-      <button id="uploadBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Upload</button>
-    </div>
-
-    <div id="fileList" class="space-y-4"></div>
-  </main>
-
-  <script type="module">
+  </main>  <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
     import {
-      getFirestore, collection, addDoc, getDocs, updateDoc, doc, increment, serverTimestamp, setDoc
+      getFirestore, collection, addDoc, getDocs, deleteDoc,
+      updateDoc, doc, serverTimestamp, query, orderBy
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import {
-      getStorage, ref, uploadBytes, getDownloadURL
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
     import {
       getAuth, onAuthStateChanged
     } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -49,87 +45,91 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore();
-    const storage = getStorage();
     const auth = getAuth();
 
-    const fileInput = document.getElementById("fileInput");
-    const uploadBtn = document.getElementById("uploadBtn");
-    const fileList = document.getElementById("fileList");
-    const categorySelect = document.getElementById("categorySelect");
-    const tagInput = document.getElementById("tagInput");
+    const form = document.getElementById("announcementForm");
+    const announcementsList = document.getElementById("announcementsList");
 
-    function getFileIcon(type, url) {
-      if (type.startsWith("image/")) return `<img src="${url}" class="w-16 h-16 object-cover rounded" />`;
-      if (type.includes("pdf")) return "📕 PDF";
-      if (type.includes("zip")) return "🗜️ ZIP";
-      if (type.includes("word") || url.endsWith(".doc") || url.endsWith(".docx")) return "📘 DOC";
-      return "📄 File";
-    }
+    let currentUser;
 
-    function renderFile(docData, id) {
-      const div = document.createElement("div");
-      div.className = "bg-white shadow rounded p-4 flex items-center gap-4";
-      const fileIcon = getFileIcon(docData.type, docData.url);
-      div.innerHTML = `
-        <div>${fileIcon}</div>
-        <div class="flex-1">
-          <p class="font-medium">${docData.name}</p>
-          <p class="text-sm text-gray-500">Category: ${docData.category || 'General'} | Downloads: ${docData.downloads || 0}</p>
-        </div>
-        <button class="bg-green-600 text-white px-3 py-1 rounded" onclick="window.downloadFile('${id}', '${docData.url}')">Download</button>
-      `;
-      fileList.appendChild(div);
-    }
-
-    window.downloadFile = async (id, url) => {
-      const user = auth.currentUser;
-      const fileRef = doc(db, "files", id);
-      await updateDoc(fileRef, { downloads: increment(1) });
-      await addDoc(collection(db, `files/${id}/downloads`), {
-        user: user?.uid || "anonymous",
-        timestamp: serverTimestamp()
+    const renderAnnouncements = async () => {
+      const snap = await getDocs(query(collection(db, "announcements"), orderBy("pinned", "desc"), orderBy("timestamp", "desc")));
+      announcementsList.innerHTML = "";
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const div = document.createElement("div");
+        div.className = `bg-white shadow p-4 rounded border-l-4 ${data.category === 'urgent' ? 'border-red-600' : data.category === 'event' ? 'border-yellow-500' : 'border-blue-500'}`;
+        div.innerHTML = `
+          <p class="mb-2 text-gray-700">${data.text}</p>
+          <div class="text-sm text-gray-500 flex justify-between items-center">
+            <span>${data.category.toUpperCase()} • ${new Date(data.timestamp?.toDate()).toLocaleString()}</span>
+            ${currentUser?.role === 'admin' || currentUser?.role === 'owner' ? `
+              <div class="flex gap-2">
+                <button class="text-blue-600 editBtn" data-id="${docSnap.id}">Edit</button>
+                <button class="text-red-600 deleteBtn" data-id="${docSnap.id}">Delete</button>
+              </div>` : ''}
+          </div>
+        `;
+        announcementsList.appendChild(div);
       });
-      window.open(url, '_blank');
-    };
-
-    uploadBtn.onclick = async () => {
-      const file = fileInput.files[0];
-      const category = categorySelect.value;
-      const tags = tagInput.value.split(",").map(t => t.trim()).filter(Boolean);
-      if (!file) return alert("Select a file");
-      const storageRef = ref(storage, `uploads/${file.name}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-
-      const fileDoc = await addDoc(collection(db, "files"), {
-        name: file.name,
-        url,
-        type: file.type,
-        category,
-        tags,
-        downloads: 0,
-        uploadedAt: serverTimestamp()
-      });
-
-      // Add notification
-      await addDoc(collection(db, "notifications"), {
-        type: "file",
-        fileId: fileDoc.id,
-        fileName: file.name,
-        timestamp: serverTimestamp()
-      });
-
-      alert("Uploaded successfully");
-      location.reload();
     };
 
     onAuthStateChanged(auth, async user => {
       if (!user) return location.href = "index.html";
-      const snap = await getDocs(collection(db, "files"));
-      snap.forEach(doc => renderFile(doc.data(), doc.id));
+      const userSnap = await getDocs(collection(db, "users"));
+      userSnap.forEach(doc => {
+        if (doc.id === user.uid) {
+          currentUser = doc.data();
+        }
+      });
+      renderAnnouncements();
+    });
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const text = document.getElementById("announcementText").value.trim();
+      const category = document.getElementById("category").value;
+      const pinned = document.getElementById("pin").checked;
+      if (!text) return;
+      await addDoc(collection(db, "announcements"), {
+        text, category, pinned,
+        timestamp: serverTimestamp(),
+        userId: auth.currentUser.uid
+      });
+      await addDoc(collection(db, "activityLogs"), {
+        action: `Posted ${category} announcement`,
+        userId: auth.currentUser.uid,
+        timestamp: serverTimestamp()
+      });
+      form.reset();
+      renderAnnouncements();
+    });
+
+    announcementsList.addEventListener("click", async e => {
+      const id = e.target.dataset.id;
+      if (e.target.classList.contains("deleteBtn")) {
+        await deleteDoc(doc(db, "announcements", id));
+        await addDoc(collection(db, "activityLogs"), {
+          action: `Deleted announcement`,
+          userId: auth.currentUser.uid,
+          timestamp: serverTimestamp()
+        });
+        renderAnnouncements();
+      }
+      if (e.target.classList.contains("editBtn")) {
+        const newText = prompt("Edit announcement:");
+        if (newText) {
+          await updateDoc(doc(db, "announcements", id), { text: newText });
+          await addDoc(collection(db, "activityLogs"), {
+            action: `Edited announcement`,
+            userId: auth.currentUser.uid,
+            timestamp: serverTimestamp()
+          });
+          renderAnnouncements();
+        }
+      }
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script>
-</body>
+  </script></body>
 </html>

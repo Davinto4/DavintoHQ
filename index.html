@@ -1,38 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>DavintoHQ | Login / Sign Up</title>
+  <meta charset="UTF-8">
+  <title>Login / Sign Up - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center h-screen">
-  <div class="bg-white p-8 rounded shadow w-full max-w-sm">
-    <h2 id="formTitle" class="text-2xl font-bold text-center mb-6">Login</h2>
 
-    <div class="space-y-4">
-      <input id="email" type="email" placeholder="Email" class="w-full border rounded px-3 py-2" required />
-      <input id="password" type="password" placeholder="Password" class="w-full border rounded px-3 py-2" required />
-    </div>
+  <div class="bg-white p-8 rounded shadow w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-4 text-center" id="formTitle">🔐 Login</h1>
 
-    <button id="authBtn" class="bg-blue-600 text-white w-full mt-6 py-2 rounded font-semibold hover:bg-blue-700">
+    <input id="email" type="email" placeholder="Email" class="w-full border px-4 py-2 mb-3 rounded" />
+    <input id="password" type="password" placeholder="Password" class="w-full border px-4 py-2 mb-4 rounded" />
+    
+    <button id="authBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded">
       Login
     </button>
 
-    <p id="toggleText" class="text-center mt-4 text-sm text-gray-600">
-      Don't have an account? <button id="toggleForm" class="text-blue-600 font-semibold hover:underline">Sign Up</button>
+    <p class="text-center text-sm text-gray-600 mt-4">
+      <span id="toggleText">Don't have an account?</span>
+      <button id="toggleMode" class="text-blue-600 font-medium hover:underline">Sign Up</button>
     </p>
 
-    <p id="error" class="text-red-500 text-center mt-2 hidden"></p>
+    <p id="errorText" class="text-red-600 text-center mt-3 hidden"></p>
   </div>
 
-  <!-- Firebase Auth -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getAuth,
-      createUserWithEmailAndPassword,
-      signInWithEmailAndPassword,
+      getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
@@ -51,33 +48,30 @@
     const email = document.getElementById("email");
     const password = document.getElementById("password");
     const authBtn = document.getElementById("authBtn");
-    const toggleForm = document.getElementById("toggleForm");
+    const toggleMode = document.getElementById("toggleMode");
     const formTitle = document.getElementById("formTitle");
     const toggleText = document.getElementById("toggleText");
-    const errorText = document.getElementById("error");
+    const errorText = document.getElementById("errorText");
 
     let isLogin = true;
 
-    toggleForm.addEventListener("click", () => {
+    toggleMode.addEventListener("click", () => {
       isLogin = !isLogin;
-      formTitle.textContent = isLogin ? "Login" : "Sign Up";
+      formTitle.textContent = isLogin ? "🔐 Login" : "🆕 Sign Up";
       authBtn.textContent = isLogin ? "Login" : "Sign Up";
-      toggleText.innerHTML = isLogin
-        ? `Don't have an account? <button id="toggleForm" class="text-blue-600 font-semibold hover:underline">Sign Up</button>`
-        : `Already have an account? <button id="toggleForm" class="text-blue-600 font-semibold hover:underline">Login</button>`;
-      document.getElementById("toggleForm").addEventListener("click", toggleFormClick);
+      toggleText.textContent = isLogin ? "Don't have an account?" : "Already have an account?";
+      toggleMode.textContent = isLogin ? "Sign Up" : "Login";
+      errorText.classList.add("hidden");
     });
-
-    function toggleFormClick() {
-      toggleForm.click();
-    }
 
     authBtn.addEventListener("click", async () => {
       errorText.classList.add("hidden");
       try {
-        const userCredential = isLogin
-          ? await signInWithEmailAndPassword(auth, email.value, password.value)
-          : await createUserWithEmailAndPassword(auth, email.value, password.value);
+        if (isLogin) {
+          await signInWithEmailAndPassword(auth, email.value, password.value);
+        } else {
+          await createUserWithEmailAndPassword(auth, email.value, password.value);
+        }
         window.location.href = "dashboard.html";
       } catch (error) {
         errorText.textContent = error.message.replace("Firebase:", "").trim();
@@ -85,9 +79,10 @@
       }
     });
 
-    // Auto-redirect if already logged in
     onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "dashboard.html";
+      if (user) {
+        window.location.href = "dashboard.html";
+      }
     });
   </script>
 </body>

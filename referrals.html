@@ -1,168 +1,129 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <title>Referrals | DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Referrals - DavintoHQ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
+    :root[data-theme='dark'] {
+      --bg: #111;
+      --text: #eee;
+      --card: #1e1e1e;
+      --accent: #10b981;
+    }
+    :root[data-theme='light'] {
+      --bg: #f4f4f4;
+      --text: #222;
+      --card: #fff;
+      --accent: #007bff;
+    }
     body {
       font-family: Arial, sans-serif;
-      background: #f7f9fa;
       margin: 0;
-      padding: 1rem;
+      padding: 2rem;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.3s ease;
     }
     h1 {
       text-align: center;
     }
     .card {
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      max-width: 800px;
+      max-width: 600px;
       margin: 2rem auto;
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
-    .label {
-      font-weight: bold;
-    }
-    .ref-link {
-      background: #f0f0f0;
-      padding: 0.5rem;
-      border-radius: 5px;
-      word-break: break-all;
-      margin: 1rem 0;
-    }
-    table {
+    input[type="text"] {
       width: 100%;
-      margin-top: 1rem;
-      border-collapse: collapse;
-    }
-    th, td {
       padding: 0.8rem;
+      margin-top: 1rem;
+      border-radius: 8px;
       border: 1px solid #ccc;
-      text-align: left;
     }
-    th {
-      background: #eee;
-    }
-    .paid {
-      color: green;
-      font-weight: bold;
-    }
-    .unpaid {
-      color: crimson;
-      font-weight: bold;
-    }
-    button.pay-btn {
-      background: dodgerblue;
-      color: white;
+    button {
+      margin-top: 1rem;
+      background: var(--accent);
+      color: #fff;
       border: none;
-      padding: 0.3rem 0.6rem;
-      border-radius: 4px;
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .ref-info {
+      margin-top: 1.5rem;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--card);
+      color: var(--text);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
       cursor: pointer;
     }
   </style>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      getDocs,
-      query,
-      where,
-      doc,
-      getDoc,
-      updateDoc
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Theme</button>  <h1><i class="fas fa-user-friends"></i> Referral Program</h1>
+  <div class="card">
+    <p>Invite your friends to DavintoHQ and earn <strong>10%</strong> commission when they make a website order!</p><label for="referralLink"><i class="fas fa-link"></i> Your Referral Link</label>
+<input type="text" id="referralLink" readonly />
+
+<button onclick="copyLink()"><i class="fas fa-copy"></i> Copy Link</button>
+
+<div class="ref-info">
+  <p><i class="fas fa-users"></i> <strong>Referrals:</strong> <span id="refCount">0</span></p>
+  <p><i class="fas fa-coins"></i> <strong>Earnings:</strong> ₦<span id="refEarnings">0.00</span></p>
+</div>
+
+  </div>  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
-      storageBucket: "davintohq.firebasestorage.app",
+      storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currentUser;
-    let isAdmin = false;
-
     onAuthStateChanged(auth, async (user) => {
-      if (!user) return (window.location.href = "index.html");
-      currentUser = user;
+      if (!user) return window.location.href = 'index.html';
 
-      document.getElementById("refCode").textContent = user.uid;
-      const link = `${window.location.origin}/index.html?ref=${user.uid}`;
-      document.getElementById("refLink").textContent = link;
+      const uid = user.uid;
+      const referralLink = `${window.location.origin}/signup.html?ref=${uid}`;
+      document.getElementById("referralLink").value = referralLink;
 
-      if (user.email === "macdinodavinto@gmail.com") isAdmin = true;
+      const userDoc = await getDoc(doc(db, "users", uid));
+      const data = userDoc.exists() ? userDoc.data() : {};
 
-      const refQuery = query(collection(db, "users"), where("referredBy", "==", user.uid));
-      const refSnap = await getDocs(refQuery);
-
-      document.getElementById("refCount").textContent = refSnap.size;
-
-      let html = "";
-      for (const docSnap of refSnap.docs) {
-        const data = docSnap.data();
-        const paid = data.referralPaid ? "paid" : "unpaid";
-        const statusLabel = data.referralPaid ? "✅ Paid" : "❌ Unpaid";
-        const payBtn = !data.referralPaid && isAdmin
-          ? `<button class="pay-btn" onclick="markAsPaid('${docSnap.id}')">Mark Paid</button>` : "";
-        html += `
-          <tr>
-            <td>${data.email || docSnap.id}</td>
-            <td>${new Date(data.createdAt?.seconds * 1000).toLocaleDateString() || "N/A"}</td>
-            <td class="${paid}">${statusLabel}</td>
-            <td>${payBtn}</td>
-          </tr>
-        `;
-      }
-      document.getElementById("refTable").innerHTML = html;
+      document.getElementById("refCount").textContent = data.referrals?.length || 0;
+      document.getElementById("refEarnings").textContent = (data.earnings || 0).toFixed(2);
     });
 
-    window.markAsPaid = async (uid) => {
-      const ref = doc(db, "users", uid);
-      await updateDoc(ref, { referralPaid: true });
-      alert("Marked as paid.");
-      location.reload();
-    };
-  </script>
-</head>
-<body>
-  <h1>🤝 Referral Dashboard</h1>
-
-  <div class="card">
-    <p><span class="label">Your Referral Code:</span> <span id="refCode"></span></p>
-    <p><span class="label">Referral Link:</span></p>
-    <div class="ref-link" id="refLink"></div>
-    <p><span class="label">Total Referrals:</span> <span id="refCount">0</span></p>
-  </div>
-
-  <div class="card">
-    <h2>📋 Referral List</h2>
-    <table>
-      <thead>
-        <tr>
-          <th>Email / UID</th>
-          <th>Date Joined</th>
-          <th>Status</th>
-          <th>Admin Action</th>
-        </tr>
-      </thead>
-      <tbody id="refTable">
-        <tr><td colspan="4">Loading...</td></tr>
-      </tbody>
-    </table>
-  </div>
-</body>
+    window.copyLink = () => {
+      const input = document.getElementById("referralLink");
+      input.select();
+      document.execCommand("copy");
+      alert("Referral link copied!");
+    }
+  </script>  <script>
+    function toggleTheme() {
+      const root = document.documentElement;
+      const current = root.getAttribute("data-theme");
+      root.setAttribute("data-theme", current === "light" ? "dark" : "light");
+    }
+  </script></body>
 </html>

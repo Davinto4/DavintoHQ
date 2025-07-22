@@ -4,71 +4,69 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel - DavintoHQ</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
-  <script src="firebase.js" defer></script>
-  <script src="scripts/sidebar.js" defer></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";const firebaseConfig = {
+  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+  authDomain: "davintohq.firebaseapp.com",
+  projectId: "davintohq",
+  storageBucket: "davintohq.firebasestorage.app",
+  messagingSenderId: "156992522736",
+  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+  measurementId: "G-3GXFN90T6S"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, (user) => {
+  if (!user || (user.email !== 'macdinodavinto@gmail.com' && !user.isAdmin)) {
+    window.location.href = "index.html";
+  }
+});
+
+  </script>
 </head>
 <body>
-  <div class="dashboard-container">
-    <aside id="sidebar"></aside>
-    <main class="dashboard-content">
-      <h1>Admin Dashboard</h1><section class="admin-buttons">
-    <a href="manage-admins.html" class="dashboard-card">Manage Admins</a>
-    <a href="settings.html" class="dashboard-card">Settings</a>
-    <a href="reports.html" class="dashboard-card">Reports</a>
-    <a href="roles.html" class="dashboard-card">Roles</a>
-    <a href="activity-logs.html" class="dashboard-card">Activity Logs</a>
-    <a href="analytics.html" class="dashboard-card">Analytics</a>
-  </section>
-
-  <section class="dashboard-stats">
-    <h2>Admin Overview</h2>
-    <div class="stats-grid">
-      <div class="stat-box">
-        <h3>Total Admins</h3>
-        <p id="totalAdmins">Loading...</p>
-      </div>
-      <div class="stat-box">
-        <h3>Total Files</h3>
-        <p id="totalFiles">Loading...</p>
-      </div>
-      <div class="stat-box">
-        <h3>Total Users</h3>
-        <p id="totalUsers">Loading...</p>
-      </div>
-    </div>
-  </section>
-</main>
-
-  </div>  <script>
-    firebase.auth().onAuthStateChanged(async user => {
-      if (!user) return (window.location.href = 'index.html');
-      const db = firebase.firestore();
-      const userRef = await db.collection('users').doc(user.uid).get();
-      const userData = userRef.data();
-
-      if (!userData || (userData.role !== 'admin' && userData.role !== 'owner')) {
-        alert("Access denied. Admins only.");
-        return (window.location.href = 'dashboard.html');
-      }
-
-      db.collection('users').where('role', 'in', ['admin', 'owner']).get()
-        .then(snapshot => {
-          document.getElementById('totalAdmins').innerText = snapshot.size;
-        });
-
-      db.collection('users').get()
-        .then(snapshot => {
-          document.getElementById('totalUsers').innerText = snapshot.size;
-        });
-
-      db.collection('files').get()
-        .then(snapshot => {
-          document.getElementById('totalFiles').innerText = snapshot.size;
-        });
-    });
-  </script></body>
+  <h1>⚙️ Admin Panel</h1>
+  <div class="admin-section">
+    <a href="manage-admins.html" class="admin-button">Manage Admins</a>
+    <a href="reports.html" class="admin-button">Reports & Logs</a>
+    <a href="settings.html" class="admin-button">Site Settings</a>
+    <a href="add-blog.html" class="admin-button">Add Blog</a>
+    <a href="announcements-admin.html" class="admin-button">Manage Announcements</a>
+  </div>  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      padding: 2rem;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .admin-section {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .admin-button {
+      display: block;
+      background: #007bff;
+      color: white;
+      text-align: center;
+      padding: 1rem;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: background 0.3s;
+    }
+    .admin-button:hover {
+      background: #0056b3;
+    }
+  </style></body>
 </html>

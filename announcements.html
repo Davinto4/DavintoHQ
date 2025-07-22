@@ -1,161 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Announcements - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 flex min-h-screen">
-  <div id="sidebar"></div>
-
-  <main class="flex-1 p-6 max-w-4xl mx-auto">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">📢 Announcements</h1>
-
-    <form id="announcementForm" class="bg-white shadow p-4 rounded mb-6">
-      <textarea id="announcementText" class="w-full border p-2 rounded mb-2" rows="3" placeholder="Write an announcement..."></textarea>
-      <div class="flex items-center gap-2 mb-2">
-        <select id="category" class="border p-2 rounded">
-          <option value="info">Info</option>
-          <option value="event">Event</option>
-          <option value="urgent">Urgent</option>
-        </select>
-        <label class="flex items-center gap-1">
-          <input type="checkbox" id="pin" class="accent-blue-600" /> Pin
-        </label>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded ml-auto" type="submit">Post</button>
-      </div>
-    </form>
-
-    <div id="announcementsList" class="space-y-4"></div>
-  </main>
-
+  <link rel="stylesheet" href="styles.css" />
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
     import {
       getFirestore,
       collection,
       addDoc,
-      getDocs,
+      query,
+      orderBy,
+      onSnapshot,
+      doc,
       deleteDoc,
       updateDoc,
-      doc,
-      serverTimestamp,
-      query,
-      orderBy
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";const firebaseConfig = {
+  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+  authDomain: "davintohq.firebaseapp.com",
+  projectId: "davintohq",
+  storageBucket: "davintohq.firebasestorage.app",
+  messagingSenderId: "156992522736",
+  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+  measurementId: "G-3GXFN90T6S"
+};
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
-    };
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const auth = getAuth(app);
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
+const form = document.getElementById("announcementForm");
+const list = document.getElementById("announcementsList");
 
-    const form = document.getElementById("announcementForm");
-    const announcementsList = document.getElementById("announcementsList");
+onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+  }
+});
 
-    let currentUser;
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const title = form.title.value;
+  const content = form.content.value;
+  const category = form.category.value;
 
-    const renderAnnouncements = async () => {
-      const snap = await getDocs(query(collection(db, "announcements"), orderBy("pinned", "desc"), orderBy("timestamp", "desc")));
-      announcementsList.innerHTML = "";
-      snap.forEach(docSnap => {
-        const data = docSnap.data();
-        const div = document.createElement("div");
-        div.className = `bg-white shadow p-4 rounded border-l-4 ${
-          data.category === "urgent"
-            ? "border-red-600"
-            : data.category === "event"
-            ? "border-yellow-500"
-            : "border-blue-500"
-        }`;
-        div.innerHTML = `
-          <p class="mb-2 text-gray-700">${data.text}</p>
-          <div class="text-sm text-gray-500 flex justify-between items-center">
-            <span>${data.category.toUpperCase()} • ${new Date(data.timestamp?.toDate()).toLocaleString()}</span>
-            ${
-              currentUser?.role === "admin" || currentUser?.role === "owner"
-                ? `
-              <div class="flex gap-2">
-                <button class="text-blue-600 editBtn" data-id="${docSnap.id}">Edit</button>
-                <button class="text-red-600 deleteBtn" data-id="${docSnap.id}">Delete</button>
-              </div>`
-                : ""
-            }
-          </div>
-        `;
-        announcementsList.appendChild(div);
-      });
-    };
+  if (!title || !content) return;
 
-    onAuthStateChanged(auth, async user => {
-      if (!user) return (location.href = "index.html");
-      const userSnap = await getDocs(collection(db, "users"));
-      userSnap.forEach(doc => {
-        if (doc.id === user.uid) {
-          currentUser = doc.data();
-        }
-      });
-      renderAnnouncements();
-    });
+  await addDoc(collection(db, "announcements"), {
+    title,
+    content,
+    category,
+    timestamp: serverTimestamp(),
+    pinned: category === "urgent"
+  });
+  form.reset();
+});
 
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-      const text = document.getElementById("announcementText").value.trim();
-      const category = document.getElementById("category").value;
-      const pinned = document.getElementById("pin").checked;
-      if (!text) return;
-      await addDoc(collection(db, "announcements"), {
-        text,
-        category,
-        pinned,
-        timestamp: serverTimestamp(),
-        userId: auth.currentUser.uid
-      });
-      await addDoc(collection(db, "activityLogs"), {
-        action: `Posted ${category} announcement`,
-        userId: auth.currentUser.uid,
-        timestamp: serverTimestamp()
-      });
-      form.reset();
-      renderAnnouncements();
-    });
+const q = query(collection(db, "announcements"), orderBy("timestamp", "desc"));
+onSnapshot(q, (snapshot) => {
+  list.innerHTML = "";
+  snapshot.forEach((docSnap) => {
+    const data = docSnap.data();
+    const div = document.createElement("div");
+    div.className = `announcement ${data.pinned ? 'pinned' : ''}`;
+    div.innerHTML = `
+      <h3>${data.title}</h3>
+      <small>[${data.category || 'info'}]</small>
+      <p>${data.content}</p>
+      <button onclick="deleteAnnouncement('${docSnap.id}')">Delete</button>
+    `;
+    list.appendChild(div);
+  });
+});
 
-    announcementsList.addEventListener("click", async e => {
-      const id = e.target.dataset.id;
-      if (e.target.classList.contains("deleteBtn")) {
-        await deleteDoc(doc(db, "announcements", id));
-        await addDoc(collection(db, "activityLogs"), {
-          action: `Deleted announcement`,
-          userId: auth.currentUser.uid,
-          timestamp: serverTimestamp()
-        });
-        renderAnnouncements();
-      }
-      if (e.target.classList.contains("editBtn")) {
-        const newText = prompt("Edit announcement:");
-        if (newText) {
-          await updateDoc(doc(db, "announcements", id), { text: newText });
-          await addDoc(collection(db, "activityLogs"), {
-            action: `Edited announcement`,
-            userId: auth.currentUser.uid,
-            timestamp: serverTimestamp()
-          });
-          renderAnnouncements();
-        }
-      }
-    });
+window.deleteAnnouncement = async (id) => {
+  await deleteDoc(doc(db, "announcements", id));
+};
 
-    import("./sidebar.js").then(m => m.loadSidebar());
   </script>
-</body>
+</head>
+<body>
+  <header>
+    <h1>📢 Announcements</h1>
+    <a href="dashboard.html">← Back to Dashboard</a>
+  </header>  <main>
+    <form id="announcementForm">
+      <input type="text" name="title" placeholder="Title" required />
+      <textarea name="content" placeholder="Announcement..." required></textarea>
+      <select name="category">
+        <option value="info">Info</option>
+        <option value="event">Event</option>
+        <option value="urgent">Urgent</option>
+      </select>
+      <button type="submit">Post Announcement</button>
+    </form><section id="announcementsList"></section>
+
+  </main>  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 1rem;
+      background: #f4f4f4;
+    }
+    header {
+      background: #222;
+      color: #fff;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    form {
+      background: white;
+      padding: 1rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    #announcementsList {
+      margin-top: 1rem;
+    }
+    .announcement {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-bottom: 1rem;
+    }
+    .pinned {
+      border-left: 4px solid crimson;
+    }
+  </style></body>
 </html>

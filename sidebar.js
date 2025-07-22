@@ -1,44 +1,26 @@
-// sidebar.js
-export function loadSidebar() {
-  const sidebar = document.getElementById("sidebar");
-  sidebar.innerHTML = `
-    <div class="bg-blue-900 text-white h-full p-4 space-y-4">
-      <h2 class="text-lg font-bold mb-6">DavintoHQ</h2>
-      <ul class="space-y-2">
-        <li><a href="chat.html" class="block hover:text-yellow-300">💬 Chat</a></li>
-        <li id="annLink" style="display: none;"><a href="announcements.html" class="block hover:text-yellow-300">📣 Announcements</a></li>
-        <li id="fileLink" style="display: none;"><a href="files.html" class="block hover:text-yellow-300">📁 Files</a></li>
-        <li><a href="profile.html" class="block hover:text-yellow-300">👤 Profile</a></li>
-        <li id="manageAdmins" style="display: none;"><a href="manage-admins.html" class="block hover:text-yellow-300">⚙️ Manage Admins</a></li>
-      </ul>
-    </div>
-  `;
+// sidebar.js import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; import { listenForNotifications } from "./notification-utils.js";
 
-  import("https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js").then(({ getAuth, onAuthStateChanged }) => {
-    const auth = getAuth();
-    const ownerEmail = "macdinodavinto@gmail.com";
-    const ownerPhone = "+2348169045105";
+export function loadSidebar() { const sidebar = document.getElementById("sidebar"); const auth = getAuth();
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) return;
-      const emailOrPhone = user.email || user.phoneNumber;
+sidebar.innerHTML = <div class="w-64 bg-white shadow-md h-full flex flex-col"> <div class="p-4 text-xl font-bold text-blue-600 border-b">DavintoHQ</div> <nav class="flex-1 p-4 space-y-2"> <a href="dashboard.html" class="block p-2 rounded hover:bg-blue-100">🏠 Dashboard</a> <a href="profile.html" class="block p-2 rounded hover:bg-blue-100">👤 Profile</a> <a href="files.html" class="block p-2 rounded hover:bg-blue-100">📁 Files</a> <a href="announcements.html" class="block p-2 rounded hover:bg-blue-100">📢 Announcements</a> <a href="blog.html" class="block p-2 rounded hover:bg-blue-100">📰 Blog</a> <a href="private-chat.html" class="block p-2 rounded hover:bg-blue-100">💬 Messages</a> <a href="search.html" class="block p-2 rounded hover:bg-blue-100">🔍 Search</a> <a href="manage-admins.html" class="block p-2 rounded hover:bg-blue-100">🛡️ Manage Admins</a> <a href="admin.html" class="block p-2 rounded hover:bg-blue-100">⚙️ Admin</a> </nav> <div class="p-4 border-t flex items-center justify-between"> <button id="logoutBtn" class="text-sm text-red-500">Logout</button> <div class="relative"> <button id="notifBtn" class="relative"> 🔔<span id="notifBadge" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 hidden"></span> </button> <div id="notifDropdown" class="absolute right-0 mt-2 w-64 bg-white border shadow-lg hidden z-50"></div> </div> </div> </div>;
 
-      // Show admin-only links
-      if (emailOrPhone === ownerEmail || emailOrPhone === ownerPhone) {
-        document.getElementById("annLink").style.display = "block";
-        document.getElementById("fileLink").style.display = "block";
-        document.getElementById("manageAdmins").style.display = "block";
-      } else {
-        import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js").then(({ getFirestore, doc, getDoc }) => {
-          const db = getFirestore();
-          getDoc(doc(db, "admins", user.uid)).then((docSnap) => {
-            if (docSnap.exists()) {
-              document.getElementById("annLink").style.display = "block";
-              document.getElementById("fileLink").style.display = "block";
-            }
-          });
-        });
-      }
-    });
-  });
-}
+onAuthStateChanged(auth, user => { if (!user) return location.href = "index.html"; });
+
+document.getElementById("logoutBtn").addEventListener("click", () => signOut(auth));
+
+const notifBtn = document.getElementById("notifBtn"); const notifBadge = document.getElementById("notifBadge"); const notifDropdown = document.getElementById("notifDropdown");
+
+notifBtn.addEventListener("click", () => { notifDropdown.classList.toggle("hidden"); });
+
+listenForNotifications(data => { const user = auth.currentUser; const unread = data.filter(n => !n.readBy?.includes(user.uid)); notifBadge.textContent = unread.length; notifBadge.classList.toggle("hidden", unread.length === 0);
+
+notifDropdown.innerHTML = data.map(n => `
+  <div class="p-2 border-b hover:bg-gray-100">
+    <div class="text-sm font-semibold">${n.title}</div>
+    <div class="text-xs text-gray-500">${new Date(n.timestamp?.seconds * 1000 || Date.now()).toLocaleString()}</div>
+    <div class="text-sm text-gray-700">${n.message}</div>
+  </div>
+`).join("");
+
+}); }
+

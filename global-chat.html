@@ -1,28 +1,31 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://kit.fontawesome.com/a2c1f1f79b.js" crossorigin="anonymous"></script>
-  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1><div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
+  <div id="sidebar"></div>
 
-<form id="chatForm" class="flex gap-2 items-center">
-  <input id="chatInput" type="text" placeholder="Type your message..." required class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
-  <input type="file" id="mediaInput" accept="image/*,video/*" class="hidden" />
-  <button type="button" onclick="document.getElementById('mediaInput').click()" class="text-blue-500"><i class="fas fa-paperclip"></i></button>
-  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
-</form>
+  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
 
-  </main>  <script type="module">
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-3 mb-4"></div>
+
+    <form id="chatForm" class="flex gap-2">
+      <input id="chatInput" type="text" placeholder="Type your message..." required
+        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
+      <button type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+    </form>
+  </main>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -36,64 +39,62 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore();
     const auth = getAuth();
-    const storage = getStorage();
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
-    const mediaInput = document.getElementById("mediaInput");
 
     let currentUser = null;
+    let userNameMap = {}; // Cache usernames
 
-    onAuthStateChanged(auth, user => {
+    onAuthStateChanged(auth, async user => {
       if (user) {
         currentUser = user;
+        await cacheCurrentUsername(user.uid);
         loadMessages();
+      } else {
+        signInAnonymously(auth).catch(console.error);
       }
     });
 
+    async function cacheCurrentUsername(uid) {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        userNameMap[uid] = userSnap.data().username || "Anonymous";
+      } else {
+        userNameMap[uid] = "Anonymous";
+      }
+    }
+
+    async function getUsername(uid) {
+      if (userNameMap[uid]) return userNameMap[uid];
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      const username = userSnap.exists() ? userSnap.data().username || "Anonymous" : "Anonymous";
+      userNameMap[uid] = username;
+      return username;
+    }
+
     const loadMessages = () => {
       const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
-      onSnapshot(q, snapshot => {
+      onSnapshot(q, async snapshot => {
         chatBox.innerHTML = "";
-        snapshot.forEach(docSnap => {
+        for (const docSnap of snapshot.docs) {
           const msg = docSnap.data();
           const isMine = msg.uid === currentUser?.uid;
+          const username = await getUsername(msg.uid);
 
           const div = document.createElement("div");
-          div.className = `group p-2 rounded-lg max-w-xl relative ${isMine ? "bg-blue-100 ml-auto" : "bg-gray-200"}`;
-
-          let mediaHTML = "";
-          if (msg.mediaURL) {
-            if (msg.mediaType.startsWith("image")) {
-              mediaHTML = `<img src="${msg.mediaURL}" class="max-w-xs rounded" />`;
-            } else if (msg.mediaType.startsWith("video")) {
-              mediaHTML = `<video controls class="max-w-xs"><source src="${msg.mediaURL}" /></video>`;
-            }
-          }
-
-          const reactions = msg.reactions ? Object.entries(msg.reactions).map(([emoji, users]) => `<span class="px-1">${emoji} ${users.length}</span>`).join(" ") : "";
+          div.className = `p-3 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
 
           div.innerHTML = `
-            <div class="flex justify-between items-center">
-              <span class="font-semibold">${msg.username || "Unknown"}</span>
-              ${isMine || currentUser?.email === 'macdinodavinto@gmail.com' ? `<button onclick="deleteMessage('${docSnap.id}')" class="text-red-500 text-xs hidden group-hover:inline">Delete</button>` : ""}
-            </div>
-            ${msg.replyTo ? `<div class="text-xs italic text-gray-500">Replying to: ${msg.replyToText}</div>` : ""}
-            ${mediaHTML}
-            <p class="text-sm">${msg.text || ""}</p>
-            <div class="flex justify-between text-xs text-gray-600">
-              <span>${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
-              <span>${reactions}</span>
-            </div>
-            <div class="flex space-x-2 mt-1">
-              <button onclick="react('${docSnap.id}', '❤️')" class="text-xs">❤️</button>
-              <button onclick="replyTo('${docSnap.id}', '${msg.text}')" class="text-xs">💬</button>
-            </div>
+            <p class="text-sm font-bold text-gray-700">${username}</p>
+            <p class="text-base">${msg.text}</p>
+            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
           `;
-
           chatBox.appendChild(div);
-        });
+        }
         chatBox.scrollTop = chatBox.scrollHeight;
       });
     };
@@ -101,53 +102,19 @@
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text && !mediaInput.files.length) return;
-
-      let mediaURL = null;
-      let mediaType = null;
-
-      if (mediaInput.files.length) {
-        const file = mediaInput.files[0];
-        const storageRef = ref(storage, `globalChats/${Date.now()}_${file.name}`);
-        await uploadBytes(storageRef, file);
-        mediaURL = await getDownloadURL(storageRef);
-        mediaType = file.type;
-      }
+      if (!text || !currentUser) return;
 
       await addDoc(collection(db, "globalChats"), {
         uid: currentUser.uid,
-        username: currentUser.displayName || "Anonymous",
         text,
-        mediaURL,
-        mediaType,
         timestamp: serverTimestamp()
       });
 
       chatInput.value = "";
-      mediaInput.value = "";
     });
 
-    window.react = async (msgId, emoji) => {
-      const docRef = doc(db, "globalChats", msgId);
-      const snap = await docRef.get();
-      const data = snap.data();
-      const reactions = data.reactions || {};
-      if (!reactions[emoji]) reactions[emoji] = [];
-      if (!reactions[emoji].includes(currentUser.uid)) reactions[emoji].push(currentUser.uid);
-      await updateDoc(docRef, { reactions });
-    };
-
-    window.replyTo = (msgId, text) => {
-      chatInput.value = `@reply(${msgId}) ${text}`;
-      chatInput.focus();
-    };
-
-    window.deleteMessage = async (msgId) => {
-      if (confirm("Delete this message?")) {
-        await deleteDoc(doc(db, "globalChats", msgId));
-      }
-    };
-
+    // Sidebar loader
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script></body>
+  </script>
+</body>
 </html>

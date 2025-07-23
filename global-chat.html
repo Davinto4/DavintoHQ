@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat - DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -12,8 +12,7 @@
     body {
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: #f5f5f5;
     }
 
     .chat-container {
@@ -34,7 +33,6 @@
       padding: 10px;
       margin: 5px 0;
       border-radius: 10px;
-      position: relative;
       max-width: 70%;
     }
 
@@ -64,7 +62,7 @@
       font-size: 16px;
     }
 
-    .delete-btn, .edit-btn, .reply-btn {
+    .delete-btn, .edit-btn {
       font-size: 0.7rem;
       margin-left: 10px;
       cursor: pointer;
@@ -109,63 +107,67 @@
     auth.onAuthStateChanged(async user => {
       if (user) {
         currentUser = user;
-        const profileRef = db.collection("users").doc(user.uid);
-        const profileSnap = await profileRef.get();
+        const profileSnap = await db.collection("users").doc(user.uid).get();
         if (profileSnap.exists) {
-          displayName = profileSnap.data().displayName || user.displayName || "Unnamed";
-        } else {
-          displayName = user.displayName || "Unnamed";
+          displayName = profileSnap.data().displayName || "Unnamed";
         }
         loadMessages();
       } else {
-        auth.signInAnonymously(); // fallback
+        auth.signInAnonymously();
       }
     });
 
     async function sendMessage() {
-      const input = document.getElementById('messageInput');
+      const input = document.getElementById("messageInput");
       const text = input.value.trim();
       if (!text) return;
 
       await db.collection("globalChats").add({
         uid: currentUser.uid,
-        displayName: displayName,
-        text,
+        text: text,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      input.value = '';
+      input.value = "";
     }
 
-    function loadMessages() {
-      db.collection("globalChats")
-        .orderBy("timestamp", "asc")
-        .onSnapshot(snapshot => {
-          const messagesDiv = document.getElementById("messages");
-          messagesDiv.innerHTML = "";
-          snapshot.forEach(doc => {
-            const data = doc.data();
-            const msgDiv = document.createElement("div");
-            msgDiv.className = "message" + (data.uid === currentUser.uid ? " you" : "");
-            msgDiv.innerHTML = `
-              <strong>${data.displayName || "Unnamed"}:</strong> ${data.text}
-              <div class="meta">${data.timestamp?.toDate().toLocaleString() || ""}</div>
-              ${data.uid === currentUser.uid ? `
-                <span class="edit-btn" onclick="editMessage('${doc.id}', '${data.text}')">✏️</span>
-                <span class="delete-btn" onclick="deleteMessage('${doc.id}')">🗑️</span>
-              ` : ''}
-            `;
-            messagesDiv.appendChild(msgDiv);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-          });
+    async function getUsername(uid) {
+      const doc = await db.collection("users").doc(uid).get();
+      return doc.exists ? (doc.data().displayName || "Unnamed") : "Unnamed";
+    }
+
+    async function loadMessages() {
+      db.collection("globalChats").orderBy("timestamp", "asc").onSnapshot(async snapshot => {
+        const messagesDiv = document.getElementById("messages");
+        messagesDiv.innerHTML = "";
+
+        const promises = snapshot.docs.map(async doc => {
+          const data = doc.data();
+          const isYou = data.uid === currentUser.uid;
+          const name = await getUsername(data.uid);
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = "message" + (isYou ? " you" : "");
+          msgDiv.innerHTML = `
+            <strong>${name}:</strong> ${data.text}
+            <div class="meta">${data.timestamp?.toDate().toLocaleString() || ""}</div>
+            ${isYou ? `
+              <span class="edit-btn" onclick="editMessage('${doc.id}', '${data.text}')">✏️</span>
+              <span class="delete-btn" onclick="deleteMessage('${doc.id}')">🗑️</span>
+            ` : ''}
+          `;
+          messagesDiv.appendChild(msgDiv);
+          messagesDiv.scrollTop = messagesDiv.scrollHeight;
         });
+
+        await Promise.all(promises);
+      });
     }
 
     async function deleteMessage(id) {
-      const docRef = db.collection("globalChats").doc(id);
-      const docSnap = await docRef.get();
-      if (docSnap.exists && (docSnap.data().uid === currentUser.uid || currentUser.email === "macdinodavinto@gmail.com")) {
-        await docRef.delete();
+      const doc = await db.collection("globalChats").doc(id).get();
+      if (doc.exists && (doc.data().uid === currentUser.uid || currentUser.email === "macdinodavinto@gmail.com")) {
+        await db.collection("globalChats").doc(id).delete();
       } else {
         alert("You can't delete this message.");
       }
@@ -174,20 +176,19 @@
     async function editMessage(id, oldText) {
       const newText = prompt("Edit message:", oldText);
       if (newText && newText !== oldText) {
-        const docRef = db.collection("globalChats").doc(id);
-        const docSnap = await docRef.get();
-        if (docSnap.exists && docSnap.data().uid === currentUser.uid) {
-          await docRef.update({ text: newText });
+        const doc = await db.collection("globalChats").doc(id).get();
+        if (doc.exists && doc.data().uid === currentUser.uid) {
+          await db.collection("globalChats").doc(id).update({ text: newText });
         } else {
           alert("You can't edit this message.");
         }
       }
     }
 
-    const messageInput = document.getElementById('messageInput');
+    const input = document.getElementById("messageInput");
     let typingTimeout;
 
-    messageInput.addEventListener('input', () => {
+    input.addEventListener("input", () => {
       db.collection("typing").doc(currentUser.uid).set({
         name: displayName,
         typing: true,
@@ -207,9 +208,9 @@
           typingUsers.push(doc.data().name);
         }
       });
-      document.getElementById("typing-indicator").innerText = typingUsers.length > 0
-        ? `${typingUsers.join(', ')} is typing...`
-        : '';
+      document.getElementById("typing-indicator").innerText = typingUsers.length
+        ? `${typingUsers.join(", ")} is typing...`
+        : "";
     });
   </script>
 </body>

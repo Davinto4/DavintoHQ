@@ -1,39 +1,96 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <title>Global Chat - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.css" />
+  <title>Referrals - DavintoHQ</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <style>
+    :root[data-theme='dark'] {
+      --bg: #111;
+      --text: #eee;
+      --card: #1e1e1e;
+      --accent: #10b981;
+    }
+    :root[data-theme='light'] {
+      --bg: #f4f4f4;
+      --text: #222;
+      --card: #fff;
+      --accent: #007bff;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background: var(--bg);
+      color: var(--text);
+      transition: all 0.3s ease;
+    }
+    h1 {
+      text-align: center;
+    }
+    .card {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: var(--card);
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    input[type="text"] {
+      width: 100%;
+      padding: 0.8rem;
+      margin-top: 1rem;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 1rem;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.7rem 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .ref-info {
+      margin-top: 1.5rem;
+    }
+    .theme-toggle {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      background: var(--card);
+      color: var(--text);
+      border: none;
+      padding: 0.5rem 1rem;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Theme</button>
 
-  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-600 mb-2">🌐 Global Chat</h1>
-    <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 p-2 bg-white rounded shadow-inner"></div>
+  <h1><i class="fas fa-user-friends"></i> Referral Program</h1>
+  <div class="card">
+    <p>Invite your friends to DavintoHQ and earn <strong>10%</strong> commission when they make a website order!</p>
 
-    <form id="chatForm" class="mt-2 flex gap-2">
-      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border rounded" />
-      <input id="mediaInput" type="file" accept="image/*,video/*" class="hidden" />
-      <button type="button" id="emojiBtn" class="bg-yellow-200 px-3 rounded">😊</button>
-      <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded">Send</button>
-    </form>
-    <emoji-picker style="display:none;" id="emojiPicker"></emoji-picker>
-  </main>
+    <label for="referralLink"><i class="fas fa-link"></i> Your Referral Link</label>
+    <input type="text" id="referralLink" readonly />
+
+    <button onclick="copyLink()"><i class="fas fa-copy"></i> Copy Link</button>
+
+    <div class="ref-info">
+      <p><i class="fas fa-users"></i> <strong>Referrals:</strong> <span id="refCount">0</span></p>
+      <p><i class="fas fa-coins"></i> <strong>Earnings:</strong> ₦<span id="refEarnings">0.00</span></p>
+    </div>
+  </div>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-    import {
-      getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-    import {
-      getAuth, onAuthStateChanged
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-    import {
-      getStorage, ref, uploadBytes, getDownloadURL
-    } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js';
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
+    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
+    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -45,79 +102,36 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
-    const storage = getStorage();
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    const chatBox = document.getElementById("chatBox");
-    const chatForm = document.getElementById("chatForm");
-    const messageInput = document.getElementById("messageInput");
-    const mediaInput = document.getElementById("mediaInput");
-    const emojiBtn = document.getElementById("emojiBtn");
-    const emojiPicker = document.getElementById("emojiPicker");
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return window.location.href = 'index.html';
 
-    let currentUser;
+      const uid = user.uid;
+      const referralLink = `${window.location.origin}/signup.html?ref=${uid}`;
+      document.getElementById("referralLink").value = referralLink;
 
-    onAuthStateChanged(auth, user => {
-      if (!user) return location.href = "index.html";
-      currentUser = user;
+      const userDoc = await getDoc(doc(db, "users", uid));
+      const data = userDoc.exists() ? userDoc.data() : {};
 
-      const q = query(collection(db, "globalChats"), orderBy("timestamp"));
-      onSnapshot(q, snapshot => {
-        chatBox.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const isSelf = msg.uid === user.uid;
-          const div = document.createElement("div");
-          div.className = `p-2 rounded max-w-xl ${isSelf ? 'bg-blue-100 ml-auto' : 'bg-gray-100'}`;
-          div.innerHTML = `
-            <div class="text-sm font-semibold text-gray-700">${msg.username || 'Anonymous'}</div>
-            ${msg.text ? `<div class="text-base text-black">${msg.text}</div>` : ""}
-            ${msg.mediaUrl ? `<img src="${msg.mediaUrl}" class="w-48 mt-2 rounded" />` : ""}
-            <div class="text-xs text-gray-400 mt-1">${msg.timestamp?.toDate().toLocaleString()}</div>
-          `;
-          chatBox.appendChild(div);
-        });
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
+      document.getElementById("refCount").textContent = data.referrals?.length || 0;
+      document.getElementById("refEarnings").textContent = (data.earnings || 0).toFixed(2);
     });
 
-    chatForm.addEventListener("submit", async e => {
-      e.preventDefault();
-      const text = messageInput.value.trim();
-      const file = mediaInput.files[0];
-      let mediaUrl = "";
-
-      if (!text && !file) return;
-
-      if (file) {
-        const fileRef = ref(storage, `chatMedia/${Date.now()}_${file.name}`);
-        await uploadBytes(fileRef, file);
-        mediaUrl = await getDownloadURL(fileRef);
-      }
-
-      await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
-        username: currentUser.email,
-        text,
-        mediaUrl,
-        timestamp: serverTimestamp()
-      });
-
-      messageInput.value = "";
-      mediaInput.value = "";
-    });
-
-    emojiBtn.addEventListener("click", () => {
-      emojiPicker.style.display = emojiPicker.style.display === "none" ? "block" : "none";
-    });
-
-    emojiPicker.addEventListener("emoji-click", e => {
-      messageInput.value += e.detail.unicode;
-    });
-
-    import("./sidebar.js").then(m => m.loadSidebar());
+    window.copyLink = () => {
+      const input = document.getElementById("referralLink");
+      input.select();
+      document.execCommand("copy");
+      alert("Referral link copied!");
+    }
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1.1.5/dist/emoji-picker.js" type="module"></script>
+  <script>
+    function toggleTheme() {
+      const root = document.documentElement;
+      const current = root.getAttribute("data-theme");
+      root.setAttribute("data-theme", current === "light" ? "dark" : "light");
+    }
+  </script>
 </body>
 </html>

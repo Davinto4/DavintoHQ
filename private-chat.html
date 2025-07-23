@@ -1,191 +1,180 @@
-<!DOCTYPE html>
-<html lang="en" data-theme="light">
+<!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Private Chat | DavintoHQ</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8">
+  <title>DavintoHQ | Private Chat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f2f5;
-      height: 100vh;
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+    }
+    .container {
       display: flex;
       flex-direction: column;
+      height: 100vh;
     }
-    header {
-      background: #fff;
-      padding: 1rem;
-      text-align: center;
-      border-bottom: 1px solid #ccc;
-    }
-    #chatSelector {
-      padding: 1rem;
-      background: #fff;
-      border-bottom: 1px solid #ccc;
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-    }
-    #chatSelector input {
-      padding: 0.5rem;
-      border-radius: 0.5rem;
-      border: 1px solid #ccc;
-      width: 200px;
-    }
-    #chatSelector button {
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      background: #007bff;
-      border: none;
+    .chat-header {
+      padding: 10px;
+      background: #6200ea;
       color: white;
-      cursor: pointer;
+      font-weight: bold;
     }
-    .chat-container {
+    .username-selector {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background: #fff;
+    }
+    .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 15px;
+      background: #f2f2f2;
     }
     .message {
-      background: #fff;
-      margin: 0.5rem 0;
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      max-width: 70%;
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
-    .me {
-      background: #007bff;
-      color: white;
-      margin-left: auto;
+    .own {
+      background: #dcf8c6;
+      align-self: flex-end;
     }
     .chat-input {
       display: flex;
-      padding: 1rem;
-      background: #fff;
+      padding: 10px;
       border-top: 1px solid #ccc;
+      background: white;
     }
     .chat-input input {
       flex: 1;
-      padding: 0.75rem;
-      border: none;
-      border-radius: 2rem;
-      margin-right: 0.5rem;
+      padding: 10px;
+      font-size: 16px;
     }
     .chat-input button {
-      border: none;
-      padding: 0.75rem 1.2rem;
-      border-radius: 2rem;
-      background: #007BFF;
-      color: white;
-      cursor: pointer;
+      padding: 10px 15px;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h2><i class="fas fa-user"></i> Private Chat</h2>
-    <div id="chatTitle">Select a user to chat with</div>
-  </header>
+  <div class="container">
+    <div class="chat-header">Private Chat</div>
+    <div class="username-selector">
+      <input type="text" id="targetUsername" placeholder="Enter username to chat with..." />
+      <button id="startChat">Start Chat</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <form class="chat-input" id="chatForm">
+      <input type="text" id="chatInput" placeholder="Type your message..." required />
+      <button type="submit">Send</button>
+    </form>
+  </div>  <!-- Firebase SDK -->  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      getDoc,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      serverTimestamp,
+      setDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  <div id="chatSelector">
-    <input type="text" id="targetUsername" placeholder="Enter username" />
-    <button id="startChatBtn">Start Chat</button>
-  </div>
-
-  <div class="chat-container" id="chatBox"></div>
-
-  <div class="chat-input">
-    <input type="text" id="chatMessage" placeholder="Type your message..." />
-    <button id="sendBtn"><i class="fas fa-paper-plane"></i></button>
-  </div>
-
-  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
     let currentUser = null;
-    let recipientUid = null;
-    let recipientName = '';
-    let chatId = '';
-    let unsubscribe = null;
+    let currentChatId = null;
+    let userDisplayName = "Unnamed";
 
-    const chatTitle = document.getElementById('chatTitle');
-    const chatBox = document.getElementById('chatBox');
-    const chatMessage = document.getElementById('chatMessage');
-    const sendBtn = document.getElementById('sendBtn');
-    const startChatBtn = document.getElementById('startChatBtn');
-    const targetUsername = document.getElementById('targetUsername');
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatMessages = document.getElementById("chatMessages");
+    const targetInput = document.getElementById("targetUsername");
+    const startChatBtn = document.getElementById("startChat");
 
-    auth.onAuthStateChanged(async user => {
-      if (user) {
-        currentUser = user;
-      } else {
-        await auth.signInAnonymously();
+    async function getUsername(uid) {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        return userDoc.data().username || userDoc.data().displayName || "Unnamed";
       }
-    });
-
-    startChatBtn.onclick = async () => {
-      const username = targetUsername.value.trim();
-      if (!username) return alert('Enter a username');
-
-      const userSnap = await db.collection('users').where('name', '==', username).get();
-      if (userSnap.empty) {
-        return alert('User not found');
-      }
-
-      recipientUid = userSnap.docs[0].id;
-      recipientName = userSnap.docs[0].data().name;
-      chatId = [currentUser.uid, recipientUid].sort().join('_');
-
-      chatTitle.textContent = `Chat with ${recipientName}`;
-      if (unsubscribe) unsubscribe(); // Stop previous listener
-      listenToMessages();
-    };
-
-    function listenToMessages() {
-      unsubscribe = db.collection('privateChats').doc(chatId).collection('messages')
-        .orderBy('timestamp')
-        .onSnapshot(snapshot => {
-          chatBox.innerHTML = '';
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const div = document.createElement('div');
-            div.className = 'message';
-            if (msg.uid === currentUser.uid) div.classList.add('me');
-            div.textContent = `${msg.displayName || 'You'}: ${msg.message}`;
-            chatBox.appendChild(div);
-          });
-          chatBox.scrollTop = chatBox.scrollHeight;
-        });
+      return "Unnamed";
     }
 
-    sendBtn.onclick = async () => {
-      const msg = chatMessage.value.trim();
-      if (!msg || !currentUser || !chatId) return;
+    async function getUidFromUsername(username) {
+      const snap = await getDoc(doc(db, "usernames", username));
+      return snap.exists() ? snap.data().uid : null;
+    }
 
-      await db.collection('privateChats').doc(chatId).collection('messages').add({
-        uid: currentUser.uid,
-        displayName: currentUser.displayName || 'You',
-        message: msg,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    function getChatId(uid1, uid2) {
+      return [uid1, uid2].sort().join("_");
+    }
+
+    function loadMessages(chatId) {
+      const q = query(collection(db, `privateChats/${chatId}/messages`), orderBy("timestamp"));
+      onSnapshot(q, snap => {
+        chatMessages.innerHTML = "";
+        snap.forEach(doc => {
+          const data = doc.data();
+          const div = document.createElement("div");
+          div.className = "message";
+          if (data.uid === currentUser.uid) div.classList.add("own");
+          div.innerHTML = `<strong>${data.displayName}:</strong> ${data.text}`;
+          chatMessages.appendChild(div);
+        });
+        chatMessages.scrollTop = chatMessages.scrollHeight;
       });
+    }
 
-      chatMessage.value = '';
-    };
-  </script>
-</body>
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text || !currentChatId || !currentUser) return;
+      await addDoc(collection(db, `privateChats/${currentChatId}/messages`), {
+        uid: currentUser.uid,
+        displayName: userDisplayName,
+        text,
+        timestamp: serverTimestamp()
+      });
+      chatInput.value = "";
+    });
+
+    startChatBtn.addEventListener("click", async () => {
+      const username = targetInput.value.trim();
+      if (!username || !currentUser) return;
+      const otherUid = await getUidFromUsername(username);
+      if (!otherUid) return alert("User not found");
+      currentChatId = getChatId(currentUser.uid, otherUid);
+      loadMessages(currentChatId);
+    });
+
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        currentUser = user;
+        const docSnap = await getDoc(doc(db, "users", user.uid));
+        if (docSnap.exists()) {
+          userDisplayName = docSnap.data().username || "Unnamed";
+        }
+      } else {
+        await signInAnonymously(auth);
+      }
+    });
+  </script></body>
 </html>

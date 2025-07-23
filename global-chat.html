@@ -1,36 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Global Chat (Debug) - DavintoHQ</title>
+  <title>Global Chat - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
+  <div id="sidebar"></div>  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1><div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
 
-  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat (Debug)</h1>
+<form id="chatForm" class="flex gap-2">
+  <input id="chatInput" type="text" placeholder="Type your message..." required
+    class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
+  <button type="submit"
+    class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+</form>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4 h-[500px]"></div>
-
-    <form id="chatForm" class="flex gap-2">
-      <input id="chatInput" type="text" placeholder="Type your message..." required
-        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
-      <button type="submit"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
-    </form>
-  </main>
-
-  <script type="module">
+  </main>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, serverTimestamp,
-      onSnapshot, query, orderBy, getDoc, doc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import {
-      getAuth, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -50,83 +39,74 @@
     const chatInput = document.getElementById("chatInput");
 
     let currentUser = null;
+    let userProfile = null;
+
+    const fetchUsername = async (uid) => {
+      try {
+        const docRef = doc(db, "users", uid);
+        const snap = await getDoc(docRef);
+        return snap.exists() ? snap.data().username : "Anonymous";
+      } catch {
+        return "Anonymous";
+      }
+    };
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        console.log("✅ Logged in as:", currentUser.uid);
         loadMessages();
-      } else {
-        console.error("❌ User not logged in.");
-        alert("You must be logged in to use global chat.");
       }
     });
 
-    async function getUsername(uid) {
-      try {
-        const docRef = doc(db, "users", uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          return data.username || "Unknown";
-        } else {
-          console.warn("⚠️ No user profile for", uid);
-          return "Unknown";
-        }
-      } catch (err) {
-        console.error("❌ Error getting username:", err);
-        return "Unknown";
-      }
-    }
-
-    function loadMessages() {
-      const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
+    const loadMessages = () => {
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
       onSnapshot(q, async (snapshot) => {
         chatBox.innerHTML = "";
-
         for (const docSnap of snapshot.docs) {
           const msg = docSnap.data();
-          const senderUid = msg.uid || "unknown";
-          const username = await getUsername(senderUid);
-
-          const isMine = senderUid === currentUser.uid;
+          const isMine = msg.uid === currentUser?.uid;
+          const username = msg.username || "Anonymous";
           const div = document.createElement("div");
-
-          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+          div.className = `p-2 rounded-lg max-w-lg shadow ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"}`;
           div.innerHTML = `
             <p class="font-semibold text-sm">${username}</p>
-            <p class="text-sm">${msg.text || "[No text]"}</p>
-            <p class="text-xs text-gray-500 text-right">${msg.timestamp?.toDate?.().toLocaleTimeString() || "⏳ Pending"}</p>
+            <p class="text-sm">${msg.text}</p>
+            <div class="text-xs text-gray-500 flex justify-between">
+              <span>${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
+              ${isMine || currentUser.email === 'macdinodavinto@gmail.com' ? `<button data-id="${docSnap.id}" class="delete-btn text-red-500">Delete</button>` : ""}
+            </div>
           `;
           chatBox.appendChild(div);
         }
-
         chatBox.scrollTop = chatBox.scrollHeight;
-      }, (error) => {
-        console.error("❌ Error loading messages:", error);
+
+        document.querySelectorAll(".delete-btn").forEach(btn => {
+          btn.onclick = async () => {
+            const id = btn.getAttribute("data-id");
+            await deleteDoc(doc(db, "globalChats", id));
+          };
+        });
       });
-    }
+    };
 
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text) return;
 
-      try {
-        await addDoc(collection(db, "chats"), {
-          uid: currentUser.uid,
-          text,
-          timestamp: serverTimestamp()
-        });
-        console.log("✅ Message sent:", text);
-        chatInput.value = "";
-      } catch (err) {
-        console.error("❌ Error sending message:", err);
-        alert("Failed to send message. Check console.");
-      }
+      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+      const username = userDoc.exists() ? userDoc.data().username : "Anonymous";
+
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        username,
+        text,
+        timestamp: serverTimestamp()
+      });
+
+      chatInput.value = "";
     });
 
-    import("./sidebar.js").then(m => m.loadSidebar()).catch(console.warn);
-  </script>
-</body>
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script></body>
 </html>

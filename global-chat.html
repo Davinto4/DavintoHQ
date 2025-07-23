@@ -24,8 +24,13 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, doc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, signInAnonymously, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -45,67 +50,69 @@
     const chatInput = document.getElementById("chatInput");
 
     let currentUser = null;
-    let userNameMap = {}; // Cache usernames
+    let userCache = {};
 
     onAuthStateChanged(auth, async user => {
       if (user) {
         currentUser = user;
-        await cacheCurrentUsername(user.uid);
-        loadMessages();
+        await cacheUserData(user.uid);
+        loadChats();
       } else {
-        signInAnonymously(auth).catch(console.error);
+        signInAnonymously(auth);
       }
     });
 
-    async function cacheCurrentUsername(uid) {
-      const userRef = doc(db, "users", uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        userNameMap[uid] = userSnap.data().username || "Anonymous";
+    async function cacheUserData(uid) {
+      const ref = doc(db, "users", uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        userCache[uid] = snap.data();
       } else {
-        userNameMap[uid] = "Anonymous";
+        userCache[uid] = { username: "Anonymous", role: "user" };
       }
     }
 
-    async function getUsername(uid) {
-      if (userNameMap[uid]) return userNameMap[uid];
-      const userRef = doc(db, "users", uid);
-      const userSnap = await getDoc(userRef);
-      const username = userSnap.exists() ? userSnap.data().username || "Anonymous" : "Anonymous";
-      userNameMap[uid] = username;
-      return username;
+    async function getUserData(uid) {
+      if (userCache[uid]) return userCache[uid];
+      const ref = doc(db, "users", uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : { username: "Anonymous", role: "user" };
+      userCache[uid] = data;
+      return data;
     }
 
-    const loadMessages = () => {
-      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
-      onSnapshot(q, async snapshot => {
+    function loadChats() {
+      const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
+      onSnapshot(q, async (snapshot) => {
         chatBox.innerHTML = "";
         for (const docSnap of snapshot.docs) {
           const msg = docSnap.data();
-          const isMine = msg.uid === currentUser?.uid;
-          const username = await getUsername(msg.uid);
+          const msgId = docSnap.id;
+          const isMine = msg.senderId === currentUser.uid;
+          const user = await getUserData(msg.senderId);
 
           const div = document.createElement("div");
           div.className = `p-3 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
 
           div.innerHTML = `
-            <p class="text-sm font-bold text-gray-700">${username}</p>
+            <p class="text-sm font-bold text-gray-700">${user.username}</p>
             <p class="text-base">${msg.text}</p>
             <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
           `;
+
           chatBox.appendChild(div);
         }
         chatBox.scrollTop = chatBox.scrollHeight;
       });
-    };
+    }
 
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text || !currentUser) return;
 
-      await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
+      await addDoc(collection(db, "chats"), {
+        senderId: currentUser.uid,
         text,
         timestamp: serverTimestamp()
       });
@@ -113,7 +120,6 @@
       chatInput.value = "";
     });
 
-    // Sidebar loader
     import("./sidebar.js").then(m => m.loadSidebar());
   </script>
 </body>

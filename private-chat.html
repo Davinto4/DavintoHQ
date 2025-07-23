@@ -1,36 +1,36 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- global-chat.html --><!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Private Chat - DavintoHQ</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Chat - DavintoHQ</title>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-100 flex min-h-screen">
-  <div id="sidebar"></div>
-
-  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">🔒 Private Chat</h1>
-
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
-
-    <form id="chatForm" class="flex gap-2">
-      <input id="chatInput" type="text" placeholder="Type your message..." required
-        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
-      <button type="submit"
-        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
-    </form>
-  </main>
-
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+<body class="flex flex-col h-screen bg-gray-100">
+  <div class="p-4 bg-white shadow-md">
+    <h1 class="text-xl font-bold">🌐 Global Chat</h1>
+  </div>  <div id="chatArea" class="flex-1 overflow-y-auto px-4 py-2 flex flex-col space-y-2"></div>  <div class="p-4 bg-white shadow-inner">
+    <div class="flex gap-2">
+      <input id="messageInput" type="text" placeholder="Type a message..."
+             class="flex-1 p-2 border rounded-md focus:outline-none focus:ring" />
+      <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+    </div>
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
     import {
-      getFirestore, collection, addDoc, serverTimestamp,
-      onSnapshot, query, orderBy, doc, getDoc, setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import {
-      getAuth, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      doc,
+      getDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -38,84 +38,81 @@
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
     const auth = getAuth();
+    const db = getFirestore(app);
 
-    const chatBox = document.getElementById("chatBox");
-    const chatForm = document.getElementById("chatForm");
-    const chatInput = document.getElementById("chatInput");
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatArea = document.getElementById("chatArea");
 
-    let currentUser = null;
-    let chatPartnerId = new URLSearchParams(location.search).get("uid");
-
+    let currentUser;
     onAuthStateChanged(auth, async (user) => {
-      if (user && chatPartnerId) {
-        currentUser = user;
-
-        // Make sure both users exist
-        const myUserRef = doc(db, "users", user.uid);
-        const theirUserRef = doc(db, "users", chatPartnerId);
-
-        const mySnap = await getDoc(myUserRef);
-        const theirSnap = await getDoc(theirUserRef);
-
-        if (!mySnap.exists() || !theirSnap.exists()) {
-          alert("User not found.");
-          return;
-        }
-
-        const myUsername = mySnap.data().username || "Unnamed";
-        const theirUsername = theirSnap.data().username || "Unnamed";
-
-        const chatId = [user.uid, chatPartnerId].sort().join("_");
-        const chatRef = collection(db, "privateChats", chatId, "messages");
-
-        // Real-time listener
-        const q = query(chatRef, orderBy("timestamp", "asc"));
-        onSnapshot(q, async snapshot => {
-          chatBox.innerHTML = "";
-          for (const docSnap of snapshot.docs) {
-            const msg = docSnap.data();
-            const isMine = msg.uid === currentUser.uid;
-
-            const senderRef = doc(db, "users", msg.uid);
-            const senderSnap = await getDoc(senderRef);
-            const senderName = senderSnap.exists() ? (senderSnap.data().username || "Unnamed") : "Unknown";
-
-            const div = document.createElement("div");
-            div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
-            div.innerHTML = `
-              <p class="text-sm font-semibold">${senderName}</p>
-              <p class="text-sm">${msg.text}</p>
-              <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
-            `;
-            chatBox.appendChild(div);
-          }
-          chatBox.scrollTop = chatBox.scrollHeight;
-        });
-
-        // Message sender
-        chatForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const text = chatInput.value.trim();
-          if (!text) return;
-
-          await addDoc(collection(db, "privateChats", chatId, "messages"), {
-            uid: currentUser.uid,
-            text,
-            timestamp: serverTimestamp()
-          });
-
-          chatInput.value = "";
-        });
-      }
+      if (!user) return;
+      currentUser = user;
+      listenToMessages();
     });
 
-    import("./sidebar.js").then(m => m.loadSidebar());
-  </script>
-</body>
+    async function getUsername(uid) {
+      try {
+        const userDoc = await getDoc(doc(db, "users", uid));
+        return userDoc.exists() ? userDoc.data().username || "Unnamed" : "Unknown";
+      } catch {
+        return "Unknown";
+      }
+    }
+
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !currentUser) return;
+
+      try {
+        await addDoc(collection(db, "chats"), {
+          uid: currentUser.uid,
+          text,
+          timestamp: serverTimestamp(),
+        });
+        messageInput.value = "";
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keypress", e => {
+      if (e.key === "Enter") sendMessage();
+    });
+
+    function listenToMessages() {
+      const q = query(collection(db, "chats"), orderBy("timestamp"));
+      onSnapshot(q, async (snapshot) => {
+        chatArea.innerHTML = "";
+        for (const docSnap of snapshot.docs) {
+          const msg = docSnap.data();
+          const senderName = await getUsername(msg.uid);
+          const isMine = msg.uid === currentUser?.uid;
+
+          const div = document.createElement("div");
+          div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+          div.innerHTML = `
+            <p class="text-sm font-semibold">${senderName}</p>
+            <p class="text-sm">${msg.text}</p>
+            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            ${!isMine ? `<button onclick="startPrivateChat('${msg.uid}')" class="mt-1 text-xs text-blue-600 hover:underline">💬 Start Private Chat</button>` : ''}
+          `;
+          chatArea.appendChild(div);
+        }
+        chatArea.scrollTop = chatArea.scrollHeight;
+      });
+    }
+
+    window.startPrivateChat = function (uid) {
+      if (uid === currentUser.uid) return alert("You can't chat with yourself.");
+      window.location.href = `private-chat.html?uid=${uid}`;
+    }
+  </script></body>
 </html>

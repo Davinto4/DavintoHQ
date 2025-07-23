@@ -1,158 +1,115 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- global-chat.html (Updated) --><!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DavintoHQ | Global Chat (omor coding work add🤧)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-    }
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      background: #f2f2f2;
-    }
-    .message {
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      background: #fff;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    .own {
-      background-color: #dcf8c6;
-      align-self: flex-end;
-    }
-    .chat-input {
-      display: flex;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-      background: #fff;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
-    .chat-input button {
-      padding: 10px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Chat - DavintoHQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="chat-container">
-    <div class="chat-messages" id="chatMessages"></div>
-    <form class="chat-input" id="chatForm">
-      <input type="text" id="chatInput" placeholder="Type your message..." required />
-      <button type="submit">Send</button>
-    </form>
-  </div>
+<body class="bg-gray-100 flex h-screen overflow-hidden">
+  <div id="sidebar"></div>  <main class="flex-1 flex flex-col">
+    <div class="p-4 border-b bg-white">
+      <h1 class="text-2xl font-bold text-blue-700">🌍 Global Chat</h1>
+    </div><div id="chatBox" class="flex-1 overflow-y-auto bg-gray-50 p-4 space-y-3"></div>
 
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+<form id="chatForm" class="flex gap-2 p-4 border-t bg-white">
+  <input id="chatInput" type="text" placeholder="Type a message..." required
+    class="flex-1 p-2 border rounded" />
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+</form>
+
+  </main>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      addDoc,
-      onSnapshot,
-      orderBy,
-      query,
-      serverTimestamp,
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, doc, deleteDoc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged, signInWithEmailAndPassword
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // Your Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-      measurementId: "G-3GXFN90T6S"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
-    let currentUser = null;
-    let userDisplayName = "Unnamed";
-
-    const chatMessages = document.getElementById("chatMessages");
+    const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
 
-    // Load user info from /users/{uid}
-    async function loadUserInfo() {
-      if (!currentUser) return;
-      const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        userDisplayName = data.username || data.displayName || "Unnamed";
-      }
-      console.log("Username loaded:", userDisplayName);
-    }
+    let currentUser;
 
-    // Load messages
-    function loadMessages() {
-      const q = query(collection(db, "globalChats"), orderBy("timestamp"));
-      onSnapshot(q, snapshot => {
-        chatMessages.innerHTML = "";
-        snapshot.forEach(doc => {
-          const data = doc.data();
-          const msg = document.createElement("div");
-          msg.className = "message";
-          if (data.uid === currentUser.uid) msg.classList.add("own");
-          msg.innerHTML = `<strong>${data.displayName || "Unnamed"}:</strong> ${data.text}`;
-          chatMessages.appendChild(msg);
-        });
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      });
-    }
-
-    // Auth logic
     onAuthStateChanged(auth, async user => {
       if (user) {
         currentUser = user;
-        console.log("Logged in as:", user.uid);
-        await loadUserInfo();
-        loadMessages();
+        await loadMessages();
       } else {
-        console.log("Signing in anonymously...");
-        await signInAnonymously(auth);
+        console.log("User not signed in.");
       }
     });
 
-    // Send message
+    async function getUsername(uid) {
+      const docSnap = await getDoc(doc(db, "users", uid));
+      return docSnap.exists() ? docSnap.data().username || "Unnamed" : "Unnamed";
+    }
+
+    async function loadMessages() {
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
+      onSnapshot(q, async snapshot => {
+        chatBox.innerHTML = "";
+        for (const docSnap of snapshot.docs) {
+          const msg = docSnap.data();
+          const isMine = msg.uid === currentUser.uid;
+          const username = await getUsername(msg.uid);
+
+          const msgDiv = document.createElement("div");
+          msgDiv.className = `${isMine ? 'text-right' : 'text-left'} bg-white shadow p-2 rounded max-w-xl`;
+          msgDiv.innerHTML = `
+            <div class="text-sm font-bold">${username}</div>
+            <div class="text-md">${msg.text}</div>
+            <div class="text-xs text-gray-500">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</div>
+            <div class="mt-1 flex gap-1 ${isMine ? 'justify-end' : 'justify-start'}">
+              ${isMine ? `<button class="text-red-500 text-xs deleteBtn" data-id="${docSnap.id}">Delete</button>` :
+                `<button class="text-blue-600 text-xs startPrivate" data-uid="${msg.uid}">Message</button>`}
+            </div>
+          `;
+          chatBox.appendChild(msgDiv);
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    }
+
     chatForm.addEventListener("submit", async e => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text || !currentUser) return;
-      console.log("Sending:", text);
-      try {
-        await addDoc(collection(db, "globalChats"), {
-          uid: currentUser.uid,
-          displayName: userDisplayName,
-          text,
-          timestamp: serverTimestamp()
-        });
-        chatInput.value = "";
-      } catch (err) {
-        console.error("Send error:", err);
+      if (!text) return;
+
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        text,
+        timestamp: serverTimestamp()
+      });
+      chatInput.value = "";
+    });
+
+    chatBox.addEventListener("click", e => {
+      if (e.target.classList.contains("deleteBtn")) {
+        const id = e.target.dataset.id;
+        deleteDoc(doc(db, "globalChats", id));
+      } else if (e.target.classList.contains("startPrivate")) {
+        const targetUid = e.target.dataset.uid;
+        const other = [currentUser.uid, targetUid].sort().join("_");
+        window.location.href = `private-chat.html?chatId=${other}`;
       }
     });
-  </script>
-</body>
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script></body>
 </html>

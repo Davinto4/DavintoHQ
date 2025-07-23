@@ -1,31 +1,36 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Global Chat - DavintoHQ</title>
+  <title>Global Chat (Debug) - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 flex min-h-screen">
   <div id="sidebar"></div>
 
   <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat (Debug)</h1>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4 h-[500px]"></div>
 
     <form id="chatForm" class="flex gap-2">
       <input id="chatInput" type="text" placeholder="Type your message..." required
-             class="flex-1 p-2 border rounded focus:outline-none focus:ring"/>
+        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
       <button type="submit"
-              class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
     </form>
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, getDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, getDoc, doc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -37,84 +42,91 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
 
     let currentUser = null;
-    let currentUsername = "Unknown";
-
-    // Load sidebar
-    import("./sidebar.js").then(m => m.loadSidebar());
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          currentUsername = userDoc.data().username || "Unknown";
-        }
+        console.log("✅ Logged in as:", currentUser.uid);
         loadMessages();
       } else {
-        alert("You must be signed in to use the chat.");
+        console.error("❌ User not logged in.");
+        alert("You must be logged in to use global chat.");
       }
     });
 
-    const loadMessages = () => {
+    async function getUsername(uid) {
+      try {
+        const docRef = doc(db, "users", uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          return data.username || "Unknown";
+        } else {
+          console.warn("⚠️ No user profile for", uid);
+          return "Unknown";
+        }
+      } catch (err) {
+        console.error("❌ Error getting username:", err);
+        return "Unknown";
+      }
+    }
+
+    function loadMessages() {
       const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
       onSnapshot(q, async (snapshot) => {
         chatBox.innerHTML = "";
 
         for (const docSnap of snapshot.docs) {
           const msg = docSnap.data();
-          const isMine = msg.senderId === currentUser?.uid;
+          const senderUid = msg.uid || "unknown";
+          const username = await getUsername(senderUid);
 
-          let senderUsername = "Anonymous";
-          if (msg.senderId) {
-            try {
-              const senderDoc = await getDoc(doc(db, "users", msg.senderId));
-              if (senderDoc.exists()) {
-                senderUsername = senderDoc.data().username || "Unknown";
-              }
-            } catch (e) {
-              console.warn("Could not get username for", msg.senderId);
-            }
-          }
-
+          const isMine = senderUid === currentUser.uid;
           const div = document.createElement("div");
-          div.className = `p-2 rounded-lg max-w-lg shadow ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"}`;
+
+          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
           div.innerHTML = `
-            <p class="text-sm font-semibold text-blue-700">${senderUsername}</p>
-            <p class="text-base">${msg.text}</p>
-            <p class="text-xs text-gray-500 text-right">${msg.timestamp?.toDate?.().toLocaleTimeString() || 'Just now'}</p>
+            <p class="font-semibold text-sm">${username}</p>
+            <p class="text-sm">${msg.text || "[No text]"}</p>
+            <p class="text-xs text-gray-500 text-right">${msg.timestamp?.toDate?.().toLocaleTimeString() || "⏳ Pending"}</p>
           `;
           chatBox.appendChild(div);
         }
 
         chatBox.scrollTop = chatBox.scrollHeight;
+      }, (error) => {
+        console.error("❌ Error loading messages:", error);
       });
-    };
+    }
 
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text || !currentUser) return;
+      if (!text) return;
 
       try {
         await addDoc(collection(db, "chats"), {
-          senderId: currentUser.uid,
+          uid: currentUser.uid,
           text,
           timestamp: serverTimestamp()
         });
+        console.log("✅ Message sent:", text);
         chatInput.value = "";
-      } catch (error) {
-        console.error("Send error:", error);
-        alert("Failed to send message.");
+      } catch (err) {
+        console.error("❌ Error sending message:", err);
+        alert("Failed to send message. Check console.");
       }
     });
+
+    import("./sidebar.js").then(m => m.loadSidebar()).catch(console.warn);
   </script>
 </body>
 </html>

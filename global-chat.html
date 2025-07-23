@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat - DavintoHQ</title>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12,7 +12,7 @@
   <main class="flex-1 flex flex-col p-4">
     <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-3 mb-4"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-3 mb-4 max-h-[75vh]"></div>
 
     <form id="chatForm" class="flex gap-2">
       <input id="chatInput" type="text" placeholder="Type your message..." required
@@ -55,30 +55,26 @@
     onAuthStateChanged(auth, async user => {
       if (user) {
         currentUser = user;
-        await cacheUserData(user.uid);
+        await loadUserProfile(user.uid);
         loadChats();
       } else {
         signInAnonymously(auth);
       }
     });
 
-    async function cacheUserData(uid) {
+    async function loadUserProfile(uid) {
       const ref = doc(db, "users", uid);
       const snap = await getDoc(ref);
-      if (snap.exists()) {
-        userCache[uid] = snap.data();
-      } else {
-        userCache[uid] = { username: "Anonymous", role: "user" };
-      }
+      userCache[uid] = snap.exists() ? snap.data() : { username: "Anonymous" };
     }
 
-    async function getUserData(uid) {
-      if (userCache[uid]) return userCache[uid];
+    async function getUsername(uid) {
+      if (userCache[uid]) return userCache[uid].username;
       const ref = doc(db, "users", uid);
       const snap = await getDoc(ref);
-      const data = snap.exists() ? snap.data() : { username: "Anonymous", role: "user" };
+      const data = snap.exists() ? snap.data() : { username: "Anonymous" };
       userCache[uid] = data;
-      return data;
+      return data.username;
     }
 
     function loadChats() {
@@ -89,15 +85,15 @@
           const msg = docSnap.data();
           const msgId = docSnap.id;
           const isMine = msg.senderId === currentUser.uid;
-          const user = await getUserData(msg.senderId);
+          const username = await getUsername(msg.senderId);
 
           const div = document.createElement("div");
           div.className = `p-3 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
 
           div.innerHTML = `
-            <p class="text-sm font-bold text-gray-700">${user.username}</p>
+            <p class="text-sm font-bold text-gray-700">${username}</p>
             <p class="text-base">${msg.text}</p>
-            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            <p class="text-xs text-gray-500 text-right">${msg.timestamp?.toDate?.().toLocaleTimeString() || ''}</p>
           `;
 
           chatBox.appendChild(div);
@@ -120,7 +116,8 @@
       chatInput.value = "";
     });
 
-    import("./sidebar.js").then(m => m.loadSidebar());
+    // Optional: Sidebar loader
+    import("./sidebar.js").then(m => m.loadSidebar?.());
   </script>
 </body>
 </html>

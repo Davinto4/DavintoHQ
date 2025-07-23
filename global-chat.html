@@ -1,152 +1,133 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ Global Chat</title>
-  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-firestore.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8">
+  <title>Global Chat</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
-    * {
-      box-sizing: border-box;
-    }
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #e0f0ff;
-      backdrop-filter: blur(8px);
+      background: #e0f2ff;
     }
     .chat-container {
       display: flex;
       flex-direction: column;
       height: 100vh;
+      backdrop-filter: blur(10px);
     }
     .messages {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 15px;
     }
     .message {
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px 15px;
-      border-radius: 12px;
+      background: #ffffffaa;
+      padding: 10px;
+      border-radius: 10px;
       margin-bottom: 10px;
-      max-width: 70%;
-      position: relative;
+      max-width: 60%;
     }
-    .message.you {
-      margin-left: auto;
-      background-color: #daf4ff;
+    .own-message {
+      background: #cfe9ff;
+      align-self: flex-end;
     }
-    .username {
+    .sender {
       font-weight: bold;
-      color: #0074cc;
-      margin-bottom: 4px;
+      margin-bottom: 5px;
     }
-    .input-container {
+    .chat-input {
       display: flex;
       padding: 10px;
-      border-top: 1px solid #ccc;
-      background-color: rgba(255, 255, 255, 0.9);
+      background: #d0eaff;
     }
-    .input-container input {
+    input[type="text"] {
       flex: 1;
       padding: 10px;
-      font-size: 16px;
       border: none;
-      border-radius: 8px;
-      margin-right: 10px;
+      border-radius: 5px;
     }
-    .input-container button {
+    button {
+      margin-left: 10px;
       padding: 10px 15px;
-      font-size: 16px;
       border: none;
-      border-radius: 8px;
-      background-color: #0074cc;
+      background: #007bff;
       color: white;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
-  <div class="chat-container">
-    <div class="messages" id="messages"></div>
-    <div class="input-container">
-      <input type="text" id="messageInput" placeholder="Type a message..." />
-      <button onclick="sendMessage()">Send</button>
-    </div>
-  </div>  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
+<div class="chat-container">
+  <div class="messages" id="messages"></div>
+  <div class="chat-input">
+    <input type="text" id="messageInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+<script>
+  // Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+    authDomain: "izuchukwu-foods.firebaseapp.com",
+    projectId: "izuchukwu-foods",
+    storageBucket: "izuchukwu-foods.appspot.com",
+    messagingSenderId: "811147638426",
+    appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-    let currentUser = null;
+  let currentUser;
 
-    auth.onAuthStateChanged(async user => {
-      if (user) {
-        currentUser = user;
-        loadMessages();
-      } else {
-        const email = prompt("Enter email");
-        const password = prompt("Enter password");
-        try {
-          await auth.signInWithEmailAndPassword(email, password);
-        } catch (error) {
-          alert("Login failed: " + error.message);
-        }
-      }
-    });
-
-    async function getUsername(uid) {
-      try {
-        const doc = await db.collection("users").doc(uid).get();
-        if (doc.exists) return doc.data().username || "Unnamed";
-      } catch {
-        return "Unnamed";
-      }
-      return "Unnamed";
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      await auth.signInWithEmailAndPassword("testuser@example.com", "testpassword")
+        .then(() => location.reload());
+    } else {
+      currentUser = user;
+      listenForMessages();
     }
+  });
 
-    async function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const text = input.value.trim();
-      if (!text || !currentUser) return;
+  function sendMessage() {
+    const text = document.getElementById("messageInput").value.trim();
+    if (text === "") return;
 
-      const username = await getUsername(currentUser.uid);
-
-      await db.collection("chats").add({
-        text,
-        uid: currentUser.uid,
-        username,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    db.collection("users").doc(currentUser.uid).get().then(userDoc => {
+      const username = userDoc.exists ? userDoc.data().username || "Unnamed" : "Unnamed";
+      db.collection("chats").add({
+        text: text,
+        senderId: currentUser.uid,
+        senderName: username,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      }).then(() => {
+        document.getElementById("messageInput").value = "";
       });
+    });
+  }
 
-      input.value = "";
-    }
-
-    function loadMessages() {
-      db.collection("chats").orderBy("timestamp")
-        .onSnapshot(snapshot => {
-          const messagesDiv = document.getElementById("messages");
-          messagesDiv.innerHTML = "";
-          snapshot.forEach(doc => {
-            const msg = doc.data();
-            const div = document.createElement("div");
-            div.className = "message" + (msg.uid === currentUser.uid ? " you" : "");
-            div.innerHTML = `<div class="username">${msg.username || "Unnamed"}</div><div>${msg.text}</div>`;
-            messagesDiv.appendChild(div);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-          });
-        });
-    }
-  </script></body>
+  function listenForMessages() {
+    db.collection("chats").orderBy("createdAt", "asc").onSnapshot(snapshot => {
+      const container = document.getElementById("messages");
+      container.innerHTML = "";
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const div = document.createElement("div");
+        div.className = "message" + (msg.senderId === currentUser.uid ? " own-message" : "");
+        div.innerHTML = `
+          <div class="sender">${msg.senderName || "Unnamed"}</div>
+          <div>${msg.text}</div>
+        `;
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      });
+    });
+  }
+</script>
+</body>
 </html>

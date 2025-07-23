@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -8,29 +7,27 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-900 flex min-h-screen font-sans">
-  <div id="sidebar"></div>
+  <div id="sidebar"></div>  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-semibold text-primary mb-4">🌍 Global Chat</h1><div id="typingIndicator" class="text-sm text-gray-500 mb-2 hidden">Someone is typing...</div>
 
-  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-semibold text-primary mb-4">🌍 Global Chat</h1>
+<div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow-md rounded-lg p-4 space-y-3 mb-4 h-[65vh]"></div>
 
-    <div id="typingIndicator" class="text-sm text-gray-500 mb-2 hidden">Someone is typing...</div>
+<form id="chatForm" class="flex items-center gap-2 mt-auto">
+  <input id="chatInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+  <input type="file" id="mediaInput" accept="image/*,video/*" class="hidden" />
+  <button type="button" id="mediaBtn" class="bg-gray-300 hover:bg-gray-400 px-3 py-2 rounded-md">📎</button>
+  <button type="submit" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition">Send</button>
+</form>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow-md rounded-lg p-4 space-y-3 mb-4 h-[65vh]"></div>
-
-    <form id="chatForm" class="flex items-center gap-2 mt-auto">
-      <input id="chatInput" type="text" placeholder="Type your message..." required
-        class="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
-      <button type="submit"
-        class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition">Send</button>
-    </form>
-  </main>
-
-  <script type="module">
+  </main>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
       getFirestore, collection, addDoc, serverTimestamp, onSnapshot,
       query, orderBy, doc, getDoc, deleteDoc, updateDoc, setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getStorage, ref as storageRef, uploadBytes, getDownloadURL
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
     import {
       getAuth, onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -47,10 +44,13 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
+    const storage = getStorage(app);
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
+    const mediaInput = document.getElementById("mediaInput");
+    const mediaBtn = document.getElementById("mediaBtn");
     const typingIndicator = document.getElementById("typingIndicator");
 
     let currentUser = null;
@@ -65,6 +65,13 @@
         by: currentUsername,
         timestamp: Date.now()
       });
+    });
+
+    mediaBtn.addEventListener("click", () => mediaInput.click());
+
+    let selectedMediaFile = null;
+    mediaInput.addEventListener("change", e => {
+      selectedMediaFile = e.target.files[0];
     });
 
     const showTyping = () => {
@@ -116,8 +123,8 @@
               <span class="font-medium text-sm text-primary">${msg.username || "Anonymous"}</span>
               <span class="text-xs text-gray-500">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
             </div>
-            <p class="text-sm">${msg.text}</p>
-
+            <p class="text-sm">${msg.text || ""}</p>
+            ${msg.mediaURL ? (msg.mediaURL.includes("video") ? `<video controls class='w-full mt-2 rounded-md'><source src='${msg.mediaURL}' type='video/mp4'></video>` : `<img src='${msg.mediaURL}' class='mt-2 rounded-md max-w-full' />`) : ""}
             <div class="absolute top-1 right-1 hidden group-hover:flex gap-2">
               ${
                 isMine
@@ -128,6 +135,7 @@
                      <button class="report-btn text-yellow-600 text-xs hover:underline">Report</button>`
                   : ""
               }
+              <button class="pin-btn text-green-600 text-xs hover:underline">${msg.pinned ? "Unpin" : "⭐ Pin"}</button>
             </div>
           `;
 
@@ -139,13 +147,15 @@
           });
 
           div.querySelector(".delete-btn")?.addEventListener("click", async () => {
-            if (confirm("Are you sure you want to delete this message?")) {
+            if (confirm("Delete this message?")) {
               await deleteDoc(doc(db, "chats", docSnap.id));
             }
           });
 
-          div.querySelector(".report-btn")?.addEventListener("click", () => {
-            alert("Message reported.");
+          div.querySelector(".report-btn")?.addEventListener("click", () => alert("Reported."));
+
+          div.querySelector(".pin-btn")?.addEventListener("click", async () => {
+            await updateDoc(doc(db, "chats", docSnap.id), { pinned: !msg.pinned });
           });
 
           chatBox.appendChild(div);
@@ -157,21 +167,31 @@
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text) return;
+      if (!text && !selectedMediaFile) return;
+
+      let mediaURL = null;
+      if (selectedMediaFile) {
+        const fileRef = storageRef(storage, `chats/${Date.now()}_${selectedMediaFile.name}`);
+        await uploadBytes(fileRef, selectedMediaFile);
+        mediaURL = await getDownloadURL(fileRef);
+      }
 
       await addDoc(collection(db, "chats"), {
         senderId: currentUser.uid,
         username: currentUsername,
         text,
+        mediaURL,
+        pinned: false,
         timestamp: serverTimestamp()
       });
 
       await setDoc(TYPING_DOC, { typing: false, by: currentUsername });
 
       chatInput.value = "";
+      mediaInput.value = "";
+      selectedMediaFile = null;
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());
-  </script>
-</body>
+  </script></body>
 </html>

@@ -7,6 +7,31 @@
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    .chat-bubble {
+      max-width: 80%;
+      padding: 0.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      display: inline-block;
+      word-wrap: break-word;
+    }
+    .chat-meta {
+      font-size: 0.75rem;
+      color: gray;
+      margin-top: 0.25rem;
+      display: flex;
+      justify-content: space-between;
+    }
+    .reaction-btn {
+      font-size: 0.9rem;
+      margin-right: 4px;
+    }
+    .message-controls button {
+      margin-right: 0.3rem;
+      font-size: 0.75rem;
+    }
+  </style>
 </head>
 <body class="flex flex-col h-screen bg-gray-100">
   <div class="p-4 bg-white shadow-md">
@@ -52,6 +77,8 @@
     const chatArea = document.getElementById("chatArea");
 
     let currentUser;
+    let replyContext = null;
+
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
       currentUser = user;
@@ -72,9 +99,10 @@
         text,
         timestamp: serverTimestamp(),
         reactions: {},
-        replyTo: null
+        replyTo: replyContext
       });
       messageInput.value = "";
+      replyContext = null;
     }
 
     sendBtn.addEventListener("click", sendMessage);
@@ -96,26 +124,32 @@
           const isMine = msg.uid === currentUser?.uid;
 
           const div = document.createElement("div");
-          div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-green-100 self-end ml-auto" : "bg-white"} shadow border`;
+          div.className = `${isMine ? "self-end text-right" : "self-start text-left"}`;
+
+          const bubble = document.createElement("div");
+          bubble.className = `chat-bubble ${isMine ? "bg-green-100" : "bg-white"}`;
 
           const reactionsHTML = ['👍','❤️','😂'].map(r => {
             const count = msg.reactions?.[r]?.length || 0;
-            return `<button onclick="react('${id}', '${r}')">${r} ${count}</button>`;
+            return `<button class='reaction-btn' onclick="react('${id}', '${r}')">${r} ${count}</button>`;
           }).join(' ');
 
-          div.innerHTML = `
-            <p class="text-sm font-semibold">${senderName}</p>
-            ${msg.replyTo ? `<p class="text-xs italic text-gray-500">Replying to ${msg.replyTo}</p>` : ''}
-            <p class="text-sm">${msg.text}</p>
-            <div class="flex gap-1 text-xs mt-1">${reactionsHTML}</div>
-            <p class="text-xs text-gray-400 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
-            <div class="flex gap-2 mt-1 text-xs">
+          bubble.innerHTML = `
+            <div class="text-xs font-semibold">${senderName}</div>
+            ${msg.replyTo ? `<div class="italic text-gray-500 text-xs mb-1">Replying to: ${msg.replyTo}</div>` : ''}
+            <div class="text-sm">${msg.text}</div>
+            <div class="chat-meta">
+              <span>${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
+            </div>
+            <div class="flex gap-1 mt-1">${reactionsHTML}</div>
+            <div class="message-controls mt-1">
               <button onclick="replyMessage('${id}', '${msg.text}')">Reply</button>
-              ${isMine ? `<button onclick="editMessage('${id}', '${msg.text}')">Edit</button><button onclick="deleteMessage('${id}')">Delete</button>` : ''}
+              ${isMine ? `<button onclick="editMessage('${id}', \`${msg.text}\`)" >Edit</button><button onclick="deleteMessage('${id}')">Delete</button>` : ''}
               ${currentUser.email === "macdinodavinto@gmail.com" ? `<button onclick="deleteMessage('${id}')">Admin Delete</button>` : ''}
             </div>
           `;
 
+          div.appendChild(bubble);
           chatArea.appendChild(div);
         }
         chatArea.scrollTop = chatArea.scrollHeight;
@@ -145,7 +179,8 @@
     }
 
     window.replyMessage = function (id, originalText) {
-      messageInput.value = `@reply:${id} `;
+      replyContext = originalText;
+      messageInput.placeholder = `Replying to: ${originalText}`;
       messageInput.focus();
     }
   </script></body>

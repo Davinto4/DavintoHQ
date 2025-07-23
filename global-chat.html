@@ -1,96 +1,31 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Referrals - DavintoHQ</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <style>
-    :root[data-theme='dark'] {
-      --bg: #111;
-      --text: #eee;
-      --card: #1e1e1e;
-      --accent: #10b981;
-    }
-    :root[data-theme='light'] {
-      --bg: #f4f4f4;
-      --text: #222;
-      --card: #fff;
-      --accent: #007bff;
-    }
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 2rem;
-      background: var(--bg);
-      color: var(--text);
-      transition: all 0.3s ease;
-    }
-    h1 {
-      text-align: center;
-    }
-    .card {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: var(--card);
-      padding: 2rem;
-      border-radius: 1rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 1rem;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-    }
-    button {
-      margin-top: 1rem;
-      background: var(--accent);
-      color: #fff;
-      border: none;
-      padding: 0.7rem 1.2rem;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    .ref-info {
-      margin-top: 1.5rem;
-    }
-    .theme-toggle {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      background: var(--card);
-      color: var(--text);
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global Chat - DavintoHQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <button class="theme-toggle" onclick="toggleTheme()"><i class="fas fa-adjust"></i> Theme</button>
+<body class="bg-gray-100 flex min-h-screen">
+  <div id="sidebar"></div>
 
-  <h1><i class="fas fa-user-friends"></i> Referral Program</h1>
-  <div class="card">
-    <p>Invite your friends to DavintoHQ and earn <strong>10%</strong> commission when they make a website order!</p>
+  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
 
-    <label for="referralLink"><i class="fas fa-link"></i> Your Referral Link</label>
-    <input type="text" id="referralLink" readonly />
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
 
-    <button onclick="copyLink()"><i class="fas fa-copy"></i> Copy Link</button>
-
-    <div class="ref-info">
-      <p><i class="fas fa-users"></i> <strong>Referrals:</strong> <span id="refCount">0</span></p>
-      <p><i class="fas fa-coins"></i> <strong>Earnings:</strong> ₦<span id="refEarnings">0.00</span></p>
-    </div>
-  </div>
+    <form id="chatForm" class="flex gap-2">
+      <input id="chatInput" type="text" placeholder="Type your message..." required
+        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
+      <button type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+    </form>
+  </main>
 
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js';
-    import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js';
-    import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js';
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -102,36 +37,58 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return window.location.href = 'index.html';
+    const chatBox = document.getElementById("chatBox");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
 
-      const uid = user.uid;
-      const referralLink = `${window.location.origin}/signup.html?ref=${uid}`;
-      document.getElementById("referralLink").value = referralLink;
+    let currentUser = null;
 
-      const userDoc = await getDoc(doc(db, "users", uid));
-      const data = userDoc.exists() ? userDoc.data() : {};
-
-      document.getElementById("refCount").textContent = data.referrals?.length || 0;
-      document.getElementById("refEarnings").textContent = (data.earnings || 0).toFixed(2);
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        loadMessages();
+      } else {
+        signInAnonymously(auth).catch(console.error);
+      }
     });
 
-    window.copyLink = () => {
-      const input = document.getElementById("referralLink");
-      input.select();
-      document.execCommand("copy");
-      alert("Referral link copied!");
-    }
-  </script>
-  <script>
-    function toggleTheme() {
-      const root = document.documentElement;
-      const current = root.getAttribute("data-theme");
-      root.setAttribute("data-theme", current === "light" ? "dark" : "light");
-    }
+    const loadMessages = () => {
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
+      onSnapshot(q, snapshot => {
+        chatBox.innerHTML = "";
+        snapshot.forEach(doc => {
+          const msg = doc.data();
+          const isMine = msg.uid === currentUser?.uid;
+          const div = document.createElement("div");
+          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+          div.innerHTML = `
+            <p class="text-sm">${msg.text}</p>
+            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+          `;
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    };
+
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        text,
+        timestamp: serverTimestamp()
+      });
+
+      chatInput.value = "";
+    });
+
+    import("./sidebar.js").then(m => m.loadSidebar());
   </script>
 </body>
 </html>

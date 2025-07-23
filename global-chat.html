@@ -1,156 +1,135 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Global Chat | DavintoHQ</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f0f0f0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-
-    header {
-      background: #007bff;
-      color: white;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    .chat-box {
-      flex: 1;
-      padding: 1rem;
-      overflow-y: auto;
-      background: #e9ecef;
-    }
-
-    .message {
-      margin: 0.5rem 0;
-      padding: 0.75rem 1rem;
-      border-radius: 1rem;
-      max-width: 70%;
-      background: white;
-    }
-
-    .message.me {
-      background: #007bff;
-      color: white;
-      margin-left: auto;
-    }
-
-    .message .name {
-      font-weight: bold;
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .input-area {
-      display: flex;
-      padding: 0.75rem;
-      background: white;
-      border-top: 1px solid #ccc;
-    }
-
-    .input-area input {
-      flex: 1;
-      padding: 0.75rem;
-      border: 1px solid #ccc;
-      border-radius: 2rem;
-      margin-right: 0.5rem;
-    }
-
-    .input-area button {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 0.75rem 1.2rem;
-      border-radius: 2rem;
-      cursor: pointer;
-    }
-  </style>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <meta charset="UTF-8" />
+  <title>Global Chat - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
+<body class="flex bg-gray-100 min-h-screen">
+  <div id="sidebar"></div>
 
-<header>
-  <h2>🌐 Global Chat</h2>
-</header>
+  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
 
-<div class="chat-box" id="chatBox"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white rounded shadow p-4 space-y-2 mb-4"></div>
 
-<div class="input-area">
-  <input type="text" id="messageInput" placeholder="Type a message...">
-  <button id="sendBtn">Send</button>
-</div>
+    <form id="messageForm" class="flex items-center gap-2">
+      <input id="messageInput" type="text" placeholder="Type your message..."
+        class="flex-1 px-4 py-2 border rounded focus:outline-none" required />
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+    </form>
+  </main>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-    authDomain: "davintohq.firebaseapp.com",
-    projectId: "davintohq",
-    storageBucket: "davintohq.appspot.com",
-    messagingSenderId: "156992522736",
-    appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-    measurementId: "G-3GXFN90T6S"
-  };
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import {
+      getFirestore, collection, addDoc, query, orderBy,
+      serverTimestamp, onSnapshot, doc, deleteDoc, updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged, signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.firestore();
-  const auth = firebase.auth();
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
 
-  const chatBox = document.getElementById('chatBox');
-  const messageInput = document.getElementById('messageInput');
-  const sendBtn = document.getElementById('sendBtn');
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore();
+    const auth = getAuth();
 
-  let currentUser = null;
+    const chatBox = document.getElementById("chatBox");
+    const messageForm = document.getElementById("messageForm");
+    const messageInput = document.getElementById("messageInput");
 
-  auth.onAuthStateChanged(async user => {
-    if (!user) {
-      await auth.signInAnonymously();
-    } else {
-      currentUser = user;
-      listenForMessages();
-    }
-  });
+    let currentUser;
 
-  sendBtn.onclick = async () => {
-    const text = messageInput.value.trim();
-    if (!text || !currentUser) return;
-
-    await db.collection("globalChats").add({
-      uid: currentUser.uid,
-      displayName: currentUser.displayName || "Anonymous",
-      message: text,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    onAuthStateChanged(auth, async user => {
+      if (!user) {
+        await signInAnonymously(auth);
+      } else {
+        currentUser = user;
+        listenForMessages();
+      }
     });
 
-    messageInput.value = "";
-  };
-
-  function listenForMessages() {
-    db.collection("globalChats").orderBy("timestamp", "asc").onSnapshot(snapshot => {
-      chatBox.innerHTML = '';
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.classList.add('message');
-        if (data.uid === currentUser.uid) div.classList.add('me');
-
-        div.innerHTML = `<span class="name">${data.displayName || "Anonymous"}</span>${data.message}`;
-        chatBox.appendChild(div);
+    async function sendMessage(content) {
+      if (!content.trim()) return;
+      await addDoc(collection(db, "globalChat"), {
+        uid: currentUser.uid,
+        content: content.trim(),
+        createdAt: serverTimestamp()
       });
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-  }
-</script>
+      messageInput.value = "";
+    }
 
+    function listenForMessages() {
+      const q = query(collection(db, "globalChat"), orderBy("createdAt", "asc"));
+      onSnapshot(q, snap => {
+        chatBox.innerHTML = "";
+        snap.forEach(docSnap => {
+          const data = docSnap.data();
+          const isMe = data.uid === currentUser.uid;
+
+          const div = document.createElement("div");
+          div.className = `p-2 rounded-lg ${isMe ? 'bg-blue-100 ml-auto' : 'bg-gray-200 mr-auto'} max-w-lg`;
+
+          const time = data.createdAt?.toDate?.().toLocaleTimeString() || "sending...";
+          div.innerHTML = `
+            <div class="text-sm text-gray-700">${data.content}</div>
+            <div class="flex justify-between items-center text-xs mt-1 text-gray-500">
+              <span>${isMe ? 'You' : 'User'}</span>
+              <span>${time}</span>
+            </div>
+          `;
+
+          if (isMe) {
+            const controls = document.createElement("div");
+            controls.className = "flex gap-2 mt-1 text-xs";
+            const editBtn = document.createElement("button");
+            editBtn.textContent = "Edit";
+            editBtn.className = "text-blue-600 hover:underline";
+            const deleteBtn = document.createElement("button");
+            deleteBtn.textContent = "Delete";
+            deleteBtn.className = "text-red-600 hover:underline";
+
+            editBtn.onclick = () => {
+              const newMsg = prompt("Edit message:", data.content);
+              if (newMsg && newMsg.trim()) {
+                updateDoc(doc(db, "globalChat", docSnap.id), {
+                  content: newMsg.trim()
+                });
+              }
+            };
+
+            deleteBtn.onclick = () => {
+              if (confirm("Delete this message?")) {
+                deleteDoc(doc(db, "globalChat", docSnap.id));
+              }
+            };
+
+            controls.append(editBtn, deleteBtn);
+            div.appendChild(controls);
+          }
+
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    }
+
+    messageForm.onsubmit = e => {
+      e.preventDefault();
+      sendMessage(messageInput.value);
+    };
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script>
 </body>
 </html>

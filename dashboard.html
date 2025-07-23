@@ -1,4 +1,3 @@
-<!-- File: dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -36,7 +35,6 @@
     }
     .username {
       font-size: 16px;
-      font-weight: normal;
     }
     .logout-button, .theme-toggle {
       padding: 5px 10px;
@@ -56,22 +54,20 @@
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      text-align: left;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       text-decoration: none;
       color: #333;
       font-weight: bold;
-      transition: background 0.3s;
       display: flex;
       gap: 10px;
       align-items: center;
     }
+    .dashboard-button:hover {
+      background: #e8f0fe;
+    }
     .dark-theme .dashboard-button {
       background: #2a2a2a;
       color: #f4f4f4;
-    }
-    .dashboard-button:hover {
-      background: #e8f0fe;
     }
     .dark-theme .dashboard-button:hover {
       background: #3a3a3a;
@@ -89,109 +85,115 @@
     <div class="dashboard-header">
       <div>DavintoHQ Dashboard</div>
       <div>
-        <span id="username" class="username">Welcome</span>
+        <span class="username">Welcome</span>
         <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
         <button class="logout-button" onclick="logout()">Logout</button>
       </div>
     </div>
-    <div id="feature-sections"></div>
+
+    <!-- USER UTILITIES -->
+    <div class="category-title">User Utilities</div>
+    <div class="dashboard-grid">
+      <a href="search.html" class="dashboard-button"><i class="fas fa-search"></i> User Search</a>
+      <a href="notifications.html" class="dashboard-button"><i class="fas fa-bell"></i> Notifications</a>
+      <a href="tasks.html" class="dashboard-button"><i class="fas fa-tasks"></i> Tasks</a>
+      <a href="calendar.html" class="dashboard-button"><i class="fas fa-calendar"></i> Calendar</a>
+      <a href="support.html" class="dashboard-button"><i class="fas fa-headset"></i> Support</a>
+      <a href="user.html" class="dashboard-button"><i class="fas fa-user"></i> My Profile</a>
+      <a href="settings.html" class="dashboard-button"><i class="fas fa-cogs"></i> Settings</a>
+      <a href="activity-log.html" class="dashboard-button"><i class="fas fa-clipboard-list"></i> Activity Log</a>
+      <a href="security.html" class="dashboard-button"><i class="fas fa-shield-alt"></i> Security</a>
+      <a href="feedback.html" class="dashboard-button"><i class="fas fa-comment-dots"></i> Feedback</a>
+    </div>
+
+    <!-- COMPANY TOOLS -->
+    <div class="category-title">Company Tools</div>
+    <div class="dashboard-grid">
+      <a href="referrals.html" class="dashboard-button"><i class="fas fa-link"></i> Referrals</a>
+      <a href="files.html" class="dashboard-button"><i class="fas fa-folder-open"></i> File Sharing</a>
+      <a href="announcements.html" class="dashboard-button"><i class="fas fa-bullhorn"></i> Announcements</a>
+      <a href="reports.html" class="dashboard-button"><i class="fas fa-chart-line"></i> Reports</a>
+      <a href="meetings.html" class="dashboard-button"><i class="fas fa-video"></i> Meetings</a>
+      <a href="projects.html" class="dashboard-button"><i class="fas fa-project-diagram"></i> Projects</a>
+      <a href="teams.html" class="dashboard-button"><i class="fas fa-users"></i> Teams</a>
+      <a href="tools.html" class="dashboard-button"><i class="fas fa-wrench"></i> Tools</a>
+      <a href="assets.html" class="dashboard-button"><i class="fas fa-archive"></i> Assets</a>
+      <a href="expenses.html" class="dashboard-button"><i class="fas fa-wallet"></i> Expenses</a>
+    </div>
+
+    <!-- SOCIAL FEATURES -->
+    <div class="category-title">Social Features</div>
+    <div class="dashboard-grid">
+      <a href="global-chat.html" class="dashboard-button"><i class="fas fa-comments"></i> Global Chat</a>
+      <a href="social-feed.html" class="dashboard-button"><i class="fas fa-rss"></i> Social Feed</a>
+      <a href="blog.html" class="dashboard-button"><i class="fas fa-blog"></i> Blog</a>
+      <a href="groups.html" class="dashboard-button"><i class="fas fa-users"></i> Groups</a>
+      <a href="stories.html" class="dashboard-button"><i class="fas fa-history"></i> Stories</a>
+      <a href="reactions.html" class="dashboard-button"><i class="fas fa-heart"></i> Reactions</a>
+      <a href="events.html" class="dashboard-button"><i class="fas fa-calendar-alt"></i> Events</a>
+      <a href="polls.html" class="dashboard-button"><i class="fas fa-poll"></i> Polls</a>
+      <a href="pages.html" class="dashboard-button"><i class="fas fa-file-alt"></i> Pages</a>
+      <a href="profile-views.html" class="dashboard-button"><i class="fas fa-eye"></i> Profile Views</a>
+    </div>
+
+    <!-- NOVEL ZONE -->
+    <div class="category-title">Novel Zone</div>
+    <div class="dashboard-grid">
+      <a href="write-novel.html" class="dashboard-button"><i class="fas fa-pen-nib"></i> Write a Novel</a>
+      <a href="read-novel.html" class="dashboard-button"><i class="fas fa-book-reader"></i> Read Novels</a>
+      <a href="my-library.html" class="dashboard-button"><i class="fas fa-book"></i> My Library</a>
+      <a href="favorites.html" class="dashboard-button"><i class="fas fa-star"></i> Favorites</a>
+      <a href="genres.html" class="dashboard-button"><i class="fas fa-tags"></i> Genres</a>
+      <a href="authors.html" class="dashboard-button"><i class="fas fa-user-edit"></i> Authors</a>
+      <a href="reviews.html" class="dashboard-button"><i class="fas fa-comment"></i> Reviews</a>
+      <a href="rankings.html" class="dashboard-button"><i class="fas fa-trophy"></i> Rankings</a>
+      <a href="collections.html" class="dashboard-button"><i class="fas fa-layer-group"></i> Collections</a>
+      <a href="publish.html" class="dashboard-button"><i class="fas fa-upload"></i> Publish</a>
+    </div>
+
+    <!-- LEARNING & RESOURCES -->
+    <div class="category-title">Learning & Resources</div>
+    <div class="dashboard-grid">
+      <a href="courses.html" class="dashboard-button"><i class="fas fa-graduation-cap"></i> Courses</a>
+      <a href="docs.html" class="dashboard-button"><i class="fas fa-book"></i> Documentation</a>
+      <a href="tips.html" class="dashboard-button"><i class="fas fa-lightbulb"></i> Tips</a>
+      <a href="certifications.html" class="dashboard-button"><i class="fas fa-certificate"></i> Certifications</a>
+      <a href="ebooks.html" class="dashboard-button"><i class="fas fa-file-pdf"></i> eBooks</a>
+      <a href="lectures.html" class="dashboard-button"><i class="fas fa-chalkboard-teacher"></i> Lectures</a>
+      <a href="mentors.html" class="dashboard-button"><i class="fas fa-user-friends"></i> Mentors</a>
+      <a href="quiz.html" class="dashboard-button"><i class="fas fa-question-circle"></i> Quizzes</a>
+      <a href="labs.html" class="dashboard-button"><i class="fas fa-flask"></i> Labs</a>
+      <a href="resources.html" class="dashboard-button"><i class="fas fa-archive"></i> Resources</a>
+    </div>
+
+    <!-- WEB TOOLS -->
+    <div class="category-title">Web Tools</div>
+    <div class="dashboard-grid">
+      <a href="html-editor.html" class="dashboard-button"><i class="fas fa-code"></i> HTML Editor</a>
+      <a href="css-tools.html" class="dashboard-button"><i class="fas fa-paint-brush"></i> CSS Tools</a>
+      <a href="js-tools.html" class="dashboard-button"><i class="fas fa-terminal"></i> JS Tools</a>
+      <a href="qr-generator.html" class="dashboard-button"><i class="fas fa-qrcode"></i> QR Generator</a>
+      <a href="color-picker.html" class="dashboard-button"><i class="fas fa-eye-dropper"></i> Color Picker</a>
+      <a href="api-tester.html" class="dashboard-button"><i class="fas fa-plug"></i> API Tester</a>
+      <a href="json-formatter.html" class="dashboard-button"><i class="fas fa-stream"></i> JSON Formatter</a>
+      <a href="code-snippets.html" class="dashboard-button"><i class="fas fa-copy"></i> Code Snippets</a>
+      <a href="seo-tools.html" class="dashboard-button"><i class="fas fa-search-dollar"></i> SEO Tools</a>
+      <a href="dev-tools.html" class="dashboard-button"><i class="fas fa-toolbox"></i> Dev Tools</a>
+    </div>
+
+    <!-- ADMIN ACCESS -->
+    <div class="category-title">Admin Access</div>
+    <div class="dashboard-grid">
+      <a href="admin.html" class="dashboard-button"><i class="fas fa-user-shield"></i> Admin Panel</a>
+    </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut,
-      signInAnonymously
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const featureSections = document.getElementById("feature-sections");
-    const usernameEl = document.getElementById("username");
-
-    const preferredOrder = [
-      "User Utilities",
-      "Company Tools",
-      "Social Features",
-      "Novel Zone",
-      "Learning & Resources",
-      "Web Tools",
-      "Admin Access"
-    ];
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const tokenResult = await user.getIdTokenResult();
-        const role = tokenResult.claims.role || "user";
-        usernameEl.textContent = `Welcome ${user.isAnonymous ? 'Guest' : (user.displayName || 'User')}`;
-
-        const q = query(collection(db, "features"));
-        const querySnapshot = await getDocs(q);
-        const categories = {};
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.role === "admin" && role !== "admin" && role !== "owner") return;
-
-          if (!categories[data.category]) {
-            categories[data.category] = [];
-          }
-          categories[data.category].push(data);
-        });
-
-        preferredOrder.forEach(category => {
-          if (!categories[category]) return;
-
-          const sectionTitle = document.createElement("div");
-          sectionTitle.className = "category-title";
-          sectionTitle.textContent = category;
-          featureSections.appendChild(sectionTitle);
-
-          const grid = document.createElement("div");
-          grid.className = "dashboard-grid";
-
-          categories[category].forEach(feature => {
-            const link = document.createElement("a");
-            link.href = feature.url;
-            link.className = "dashboard-button";
-            link.innerHTML = `<i class="${feature.icon || 'fa fa-link'}"></i> <span>${feature.title}</span>`;
-            grid.appendChild(link);
-          });
-
-          featureSections.appendChild(grid);
-        });
-      } else {
-        signInAnonymously(auth);
-      }
-    });
-
-    window.logout = function () {
-      signOut(auth).then(() => {
-        location.href = "index.html";
-      });
+  <script>
+    function logout() {
+      window.location.href = 'index.html';
     }
-
-    window.toggleTheme = function () {
-      document.body.classList.toggle("dark-theme");
+    function toggleTheme() {
+      document.body.classList.toggle('dark-theme');
     }
   </script>
 </body>

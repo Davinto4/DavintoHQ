@@ -59,19 +59,23 @@
 
     let currentUser = null;
 
-    onAuthStateChanged(auth, async user => {
-      if (user) {
-        currentUser = user;
-        // Optional: Give anonymous users a default display name
-        if (!user.displayName) {
-          const randomName = "User-" + Math.floor(Math.random() * 1000);
-          await updateProfile(user, { displayName: randomName });
-        }
-        loadMessages();
-      } else {
-        await signInAnonymously(auth);
-      }
-    });
+    async function ensureLoggedIn() {
+      return new Promise((resolve, reject) => {
+        onAuthStateChanged(auth, async (user) => {
+          if (user) {
+            if (!user.displayName) {
+              const randomName = "User-" + Math.floor(Math.random() * 1000);
+              await updateProfile(user, { displayName: randomName });
+            }
+            currentUser = user;
+            resolve(user);
+            loadMessages();
+          } else {
+            signInAnonymously(auth).catch(reject);
+          }
+        });
+      });
+    }
 
     function loadMessages() {
       const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
@@ -103,7 +107,10 @@
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text || !currentUser) return;
+      if (!text) return;
+
+      // Ensure user is authenticated before sending
+      if (!currentUser) await ensureLoggedIn();
 
       await addDoc(collection(db, "globalChats"), {
         uid: currentUser.uid,
@@ -115,6 +122,7 @@
       chatInput.value = "";
     });
 
+    ensureLoggedIn().catch(console.error);
     import("./sidebar.js").then(m => m.loadSidebar());
   </script>
 </body>

@@ -1,166 +1,113 @@
-<!DOCTYPE html><html lang="en" data-theme="light">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ Dashboard</title>
+  <title>DavintoHQ | Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-pVhjzYc5O2KUeIgdlAE0LONuOe7VZLTL5UlEw9pyKmJcglzZ3J5j9Gb5ZUKb6tFepxBME5JoK7O0C3yZ+5IJgw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
-    import {
-      getFirestore,
-      doc,
-      getDoc
-    } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";const firebaseConfig = {
-  apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-  authDomain: "davintohq.firebaseapp.com",
-  projectId: "davintohq",
-  storageBucket: "davintohq.firebasestorage.app",
-  messagingSenderId: "156992522736",
-  appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
-  measurementId: "G-3GXFN90T6S"
-};
-
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-onAuthStateChanged(auth, async (user) => {
-  if (!user) return (window.location.href = "index.html");
-
-  const userDoc = await getDoc(doc(db, "users", user.uid));
-  const userData = userDoc.exists() ? userDoc.data() : {};
-  const role = userData.role || "user";
-
-  document.getElementById("adminBtn").style.display =
-    user.email === "macdinodavinto@gmail.com" || role === "admin" || role === "owner"
-      ? "block"
-      : "none";
-});
-
-document.getElementById("logoutBtn").onclick = () => {
-  signOut(auth).then(() => {
-    window.location.href = "index.html";
-  });
-};
-
-document.getElementById("themeToggle").onclick = () => {
-  const root = document.documentElement;
-  const current = root.getAttribute('data-theme');
-  root.setAttribute('data-theme', current === 'light' ? 'dark' : 'light');
-}
-
-  </script>
   <style>
-    :root[data-theme='dark'] {
-      --bg: #1f1f1f;
-      --text: #f5f5f5;
-      --card: #2c2c2c;
-    }
-    :root[data-theme='light'] {
-      --bg: #f0f2f5;
-      --text: #2c3e50;
-      --card: #ffffff;
-    }
     body {
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
       margin: 0;
-      padding: 2rem;
-      transition: background 0.3s ease, color 0.3s ease;
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
     }
-    h1 {
-      text-align: center;
-    }
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 1rem;
-      margin-top: 2rem;
+    .container {
+      padding: 20px;
     }
     .card {
-      background: var(--card);
-      padding: 1.5rem;
-      text-align: center;
-      border-radius: 1rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      transition: transform 0.2s ease, background 0.3s ease;
-      cursor: pointer;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
     }
-    .card:hover {
-      transform: translateY(-5px);
+    .dashboard-header {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 30px;
     }
-    #logoutBtn, #themeToggle {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      margin-left: 1rem;
-      background: crimson;
-      color: white;
-      padding: 0.5rem 1rem;
+    .dashboard-section {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    iframe {
+      width: 100%;
       border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    #themeToggle {
-      right: 6rem;
-      background: #333;
-    }
-    .hidden {
-      display: none;
-    }
-    .category-title {
-      margin-top: 3rem;
-      font-size: 1.5rem;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 0.3rem;
     }
   </style>
 </head>
 <body>
-  <button id="logoutBtn">Logout</button>
-  <button id="themeToggle"><i class="fas fa-adjust"></i> Theme</button>
-  <h1><i class="fas fa-chart-line"></i> DavintoHQ Dashboard</h1>  <div class="category-title"><i class="fas fa-tools"></i> Company Tools</div>
-  <div class="grid">
-    <div class="card" onclick="location.href='referrals.html'"><i class="fas fa-user-friends"></i> Referrals</div>
-    <div class="card" onclick="location.href='files.html'"><i class="fas fa-folder-open"></i> File Sharing</div>
-    <div class="card" onclick="location.href='announcements.html'"><i class="fas fa-bullhorn"></i> Announcements</div>
-    <div class="card" onclick="location.href='settings.html'"><i class="fas fa-cogs"></i> Settings</div>
-  </div>  <div class="category-title"><i class="fas fa-globe"></i> Social Features</div>
-  <div class="grid">
-    <div class="card" onclick="location.href='global-chat.html'"><i class="fas fa-comments"></i> Global Chat</div>
-    <div class="card" onclick="location.href='private-chat.html'"><i class="fas fa-comment-dots"></i> Private Chat</div>
-    <div class="card" onclick="location.href='feed.html'"><i class="fas fa-rss"></i> Social Feed</div>
-    <div class="card" onclick="location.href='blog.html'"><i class="fas fa-blog"></i> Blog</div>
-    <div class="card" onclick="location.href='groups.html'"><i class="fas fa-users"></i> Groups</div>
-    <div class="card" onclick="location.href='profile.html'"><i class="fas fa-user"></i> My Profile</div>
-  </div>  <div class="category-title"><i class="fas fa-book"></i> Learning & Resources</div>
-  <div class="grid">
-    <div class="card" onclick="location.href='courses.html'"><i class="fas fa-graduation-cap"></i> Courses</div>
-    <div class="card" onclick="location.href='docs.html'"><i class="fas fa-file-alt"></i> Documentation</div>
-    <div class="card" onclick="location.href='tips.html'"><i class="fas fa-lightbulb"></i> Tips</div>
-    <div class="card" onclick="location.href='web-tools.html'"><i class="fas fa-flask"></i> Web Tools</div>
-  </div>  <div class="category-title"><i class="fas fa-book-open"></i> Books & Novels</div>
-  <div class="grid">
-    <div class="card" onclick="location.href='write-book.html'"><i class="fas fa-pen-nib"></i> Write a Book</div>
-    <div class="card" onclick="location.href='read-books.html'"><i class="fas fa-book-reader"></i> Read Books</div>
-    <div class="card" onclick="location.href='my-library.html'"><i class="fas fa-bookmark"></i> My Library</div>
-  </div>  <div class="category-title"><i class="fas fa-toolbox"></i> User Utilities</div>
-  <div class="grid">
-    <div class="card" onclick="location.href='search.html'"><i class="fas fa-search"></i> User Search</div>
-    <div class="card" onclick="location.href='notifications.html'"><i class="fas fa-bell"></i> Notifications</div>
-    <div class="card" onclick="location.href='tasks.html'"><i class="fas fa-tasks"></i> Tasks</div>
-    <div class="card" onclick="location.href='calendar.html'"><i class="fas fa-calendar-alt"></i> Calendar</div>
-    <div class="card" onclick="location.href='support.html'"><i class="fas fa-headset"></i> Support</div>
-  </div>  <div class="category-title"><i class="fas fa-user-shield"></i> Admin Access</div>
-  <div class="grid">
-    <div class="card hidden" id="adminBtn" onclick="location.href='admin.html'"><i class="fas fa-tools"></i> Admin Panel</div>
+  <div class="container">
+    <div class="dashboard-header">DavintoHQ Dashboard</div>
+
+    <div class="dashboard-section">
+      <!-- Company Tools -->
+      <div class="card"><h3>File Sharing</h3><iframe src="files.html" height="400"></iframe></div>
+      <div class="card"><h3>Announcements</h3><iframe src="announcements.html" height="400"></iframe></div>
+      <div class="card"><h3>Settings</h3><iframe src="settings.html" height="400"></iframe></div>
+      <div class="card"><h3>Referrals</h3><iframe src="referrals.html" height="400"></iframe></div>
+      <div class="card"><h3>Company Calendar</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Shift Management</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Leave Requests</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Activity Logs</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Issue Tracker</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>HR Desk</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+
+      <!-- Social Features -->
+      <div class="card"><h3>Social Feed</h3><iframe src="social-feed.html" height="400"></iframe></div>
+      <div class="card"><h3>Global Chat</h3><iframe src="global-chat.html" height="400"></iframe></div>
+      <div class="card"><h3>Groups</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Friends</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Likes & Reactions</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Stories</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Trending</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Feeds Filter</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Mentions</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+
+      <!-- Blog & Profile -->
+      <div class="card"><h3>Blog</h3><iframe src="blog.html" height="400"></iframe></div>
+      <div class="card"><h3>My Profile</h3><iframe src="user.html" height="400"></iframe></div>
+
+      <!-- Learning & Resources -->
+      <div class="card"><h3>Courses</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Documentation</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Tips</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Web Tools</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Developer Docs</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Video Tutorials</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Guides</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>API Access</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Changelog</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Roadmap</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+
+      <!-- Books & Novels -->
+      <div class="card"><h3>Write a Book</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Read Books</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>My Library</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Genres</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Authors</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Reading List</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Bookmarks</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Quotes</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Community Reviews</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Publishing Tools</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+
+      <!-- User Utilities -->
+      <div class="card"><h3>User Search</h3><iframe src="search.html" height="400"></iframe></div>
+      <div class="card"><h3>Notifications</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Tasks</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Calendar</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Support</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>FAQ</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Feedback</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Security</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Account Settings</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+      <div class="card"><h3>Theme</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+
+      <!-- Admin Access -->
+      <div class="card"><h3>Admin Panel</h3><iframe src="admin.html" height="400"></iframe></div>
+    </div>
   </div>
 </body>
 </html>

@@ -1,133 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Global Chat</title>
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.5.2/firebase-firestore-compat.js"></script>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f1f1f1;
-      margin: 0;
-      padding: 0;
-    }
-    .chat-container {
-      width: 100%;
-      max-width: 600px;
-      margin: auto;
-      padding-top: 40px;
-    }
-    .messages {
-      border: 1px solid #ccc;
-      background: white;
-      padding: 10px;
-      height: 400px;
-      overflow-y: scroll;
-      margin-bottom: 10px;
-    }
-    .message {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
-    }
-    .message .meta {
-      font-size: 12px;
-      color: gray;
-    }
-    .input-area {
-      display: flex;
-    }
-    .input-area input {
-      flex: 1;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-right: none;
-      font-size: 16px;
-    }
-    .input-area button {
-      padding: 10px 20px;
-      border: none;
-      background: #007bff;
-      color: white;
-      font-size: 16px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🌍 Global Chat - DavintoHQ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-<div class="chat-container">
-  <div class="messages" id="messages"></div>
-  <div class="input-area">
-    <input type="text" id="messageInput" placeholder="Type your message">
-    <button onclick="sendMessage()">Send</button>
-  </div>
-</div>
+<body class="bg-gray-100 h-screen flex">
+  <div id="sidebar"></div>
 
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-    authDomain: "davintohq.firebaseapp.com",
-    projectId: "davintohq",
-    storageBucket: "davintohq.appspot.com",
-    messagingSenderId: "156992522736",
-    appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-  };
+  <main class="flex-1 flex flex-col h-screen p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-2">🌍 Global Chat</h1>
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4 border border-gray-300"></div>
 
-  let currentUser = null;
-  let username = 'Anonymous';
+    <div id="typingIndicator" class="text-sm text-gray-500 mb-2 hidden">Someone is typing...</div>
 
-  auth.onAuthStateChanged(async user => {
-    if (user) {
-      currentUser = user;
+    <form id="chatForm" class="flex gap-2">
+      <input id="chatInput" type="text" placeholder="Type your message..." required
+        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
+      <button type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+    </form>
+  </main>
 
-      const userDoc = await db.collection('users').doc(user.uid).get();
-      username = userDoc.exists ? userDoc.data().username || "Anonymous" : "Anonymous";
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-      listenForMessages();
-    } else {
-      await auth.signInAnonymously();
-    }
-  });
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
 
-  function sendMessage() {
-    const input = document.getElementById('messageInput');
-    const text = input.value.trim();
-    if (!text) return;
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore();
+    const auth = getAuth();
 
-    db.collection('chats').add({
-      text,
-      uid: currentUser.uid,
-      username: username,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    }).then(() => {
-      input.value = "";
-    }).catch(error => {
-      alert("Error: " + error.message);
+    const chatBox = document.getElementById("chatBox");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const typingIndicator = document.getElementById("typingIndicator");
+
+    let currentUser = null;
+    let displayName = "Unknown";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        const profileSnap = await getDoc(doc(db, "users", user.uid));
+        if (profileSnap.exists()) {
+          displayName = profileSnap.data().displayName || "Unnamed";
+        }
+        loadMessages();
+      }
     });
-  }
 
-  function listenForMessages() {
-    db.collection('chats').orderBy('timestamp')
-      .onSnapshot(snapshot => {
-        const container = document.getElementById('messages');
-        container.innerHTML = '';
-        snapshot.forEach(doc => {
-          const msg = doc.data();
-          const div = document.createElement('div');
-          div.classList.add('message');
+    chatInput.addEventListener("input", () => {
+      // Optional: typing logic
+    });
+
+    const loadMessages = () => {
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
+      onSnapshot(q, snapshot => {
+        chatBox.innerHTML = "";
+        snapshot.forEach(docSnap => {
+          const msg = docSnap.data();
+          const isMine = msg.uid === currentUser?.uid;
+          const div = document.createElement("div");
+          div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+
           div.innerHTML = `
-            <div><strong>${msg.username}</strong>: ${msg.text}</div>
-            <div class="meta">${msg.timestamp?.toDate().toLocaleString() || ''}</div>
+            <div class="flex justify-between items-center">
+              <span class="text-sm font-semibold">${msg.displayName || "Anonymous"}</span>
+              <span class="text-xs text-gray-500">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
+            </div>
+            <p class="text-sm my-1">${msg.text || ''}</p>
+            <div class="flex gap-2 text-xs mt-1">
+              <button onclick="replyTo('${msg.text}')" class="text-blue-500">Reply</button>
+              <button onclick="react('${docSnap.id}', '❤️')" class="text-red-500">❤️</button>
+              <button onclick="react('${docSnap.id}', '😂')" class="text-yellow-500">😂</button>
+              <button onclick="react('${docSnap.id}', '👍')" class="text-green-500">👍</button>
+              ${isMine ? `<button onclick="editMessage('${docSnap.id}', '${msg.text}')" class="text-purple-500">Edit</button>
+                          <button onclick="deleteMessage('${docSnap.id}')" class="text-red-600">Delete</button>` : ''}
+              ${currentUser.email === 'macdinodavinto@gmail.com' && !isMine ? `
+                <button onclick="deleteMessage('${docSnap.id}')" class="text-red-600">Admin Delete</button>
+                <button onclick="reportMessage('${docSnap.id}')" class="text-orange-600">Report</button>` : ''}
+            </div>
           `;
-          container.appendChild(div);
+          chatBox.appendChild(div);
         });
-        container.scrollTop = container.scrollHeight;
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
-  }
-</script>
+    };
+
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        displayName,
+        text,
+        timestamp: serverTimestamp()
+      });
+
+      chatInput.value = "";
+    });
+
+    window.react = async (id, reaction) => {
+      const msgRef = doc(db, "globalChats", id);
+      await updateDoc(msgRef, {
+        [`reactions.${currentUser.uid}`]: reaction
+      });
+    };
+
+    window.replyTo = (msgText) => {
+      chatInput.value = `↩️ ${msgText} - `;
+      chatInput.focus();
+    };
+
+    window.editMessage = async (id, oldText) => {
+      const newText = prompt("Edit message:", oldText);
+      if (newText && newText !== oldText) {
+        await updateDoc(doc(db, "globalChats", id), { text: newText });
+      }
+    };
+
+    window.deleteMessage = async (id) => {
+      if (confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "globalChats", id));
+      }
+    };
+
+    window.reportMessage = (id) => {
+      alert("Message reported (not yet implemented fully).");
+    };
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script>
 </body>
 </html>

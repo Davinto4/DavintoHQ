@@ -1,149 +1,237 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ | Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <script src="https://kit.fontawesome.com/a2e0e9e3d3.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #f4f6f9;
-      color: #333;
-      transition: background 0.3s, color 0.3s;
-    }
-    body.dark {
-      background: #1e1e1e;
-      color: #f4f4f4;
+      background: var(--bg);
+      color: var(--text);
     }
     .container {
       padding: 20px;
     }
     .dashboard-header {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 20px;
     }
-    .dashboard-header h1 {
-      margin: 0;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
+    .username {
+      color: var(--text);
+      font-size: 16px;
+      font-weight: normal;
+      margin-right: 10px;
     }
     .logout-button, .theme-toggle {
-      padding: 8px 12px;
-      background: #007bff;
+      padding: 5px 10px;
+      margin-left: 5px;
+      background: #ff4b5c;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    .category-title {
-      font-size: 20px;
-      font-weight: bold;
-      margin-top: 30px;
-      margin-bottom: 10px;
+    .theme-toggle {
+      background: #333;
     }
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 15px;
     }
     .dashboard-button {
-      display: flex;
-      align-items: center;
-      gap: 10px;
       background: #fff;
-      padding: 15px;
+      padding: 20px;
       border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: left;
       text-decoration: none;
-      color: inherit;
+      color: #333;
       font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: background 0.3s;
+      display: flex;
+      gap: 10px;
+      align-items: center;
     }
     .dashboard-button:hover {
       background: #e8f0fe;
     }
-    body.dark .dashboard-button {
-      background: #2c2c2c;
+    .category-title {
+      font-size: 20px;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-weight: bold;
     }
-    body.dark .dashboard-button:hover {
-      background: #3c3c3c;
+    :root {
+      --bg: #f4f6f9;
+      --text: #000;
+    }
+    body.dark {
+      --bg: #121212;
+      --text: #fff;
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="dashboard-header">
-      <h1>DavintoHQ Dashboard</h1>
-      <div class="header-actions">
+      <div>DavintoHQ Dashboard</div>
+      <div>
+        <span id="username" class="username">Welcome</span>
         <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
-        <button class="logout-button" onclick="alert('Logging out...')">Logout</button>
+        <button class="logout-button" onclick="logout()">Logout</button>
       </div>
     </div>
+    <div id="feature-sections"></div>
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
 
-    <!-- User Utilities -->
-    <div class="category-title">User Utilities</div>
-    <div class="dashboard-grid">
-      <a href="user-search.html" class="dashboard-button"><i class="fas fa-search"></i> User Search</a>
-      <a href="notifications.html" class="dashboard-button"><i class="fas fa-bell"></i> Notifications</a>
-      <a href="tasks.html" class="dashboard-button"><i class="fas fa-tasks"></i> Tasks</a>
-      <a href="calendar.html" class="dashboard-button"><i class="fas fa-calendar-alt"></i> Calendar</a>
-      <a href="support.html" class="dashboard-button"><i class="fas fa-life-ring"></i> Support</a>
-      <a href="my-profile.html" class="dashboard-button"><i class="fas fa-user-circle"></i> My Profile</a>
-    </div>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
 
-    <!-- Company Tools -->
-    <div class="category-title">Company Tools</div>
-    <div class="dashboard-grid">
-      <a href="referrals.html" class="dashboard-button"><i class="fas fa-users"></i> Referrals</a>
-      <a href="file-sharing.html" class="dashboard-button"><i class="fas fa-file-upload"></i> File Sharing</a>
-      <a href="announcements.html" class="dashboard-button"><i class="fas fa-bullhorn"></i> Announcements</a>
-      <a href="settings.html" class="dashboard-button"><i class="fas fa-cogs"></i> Settings</a>
-    </div>
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    <!-- Social Features -->
-    <div class="category-title">Social Features</div>
-    <div class="dashboard-grid">
-      <a href="global-chat.html" class="dashboard-button"><i class="fas fa-comments"></i> Global Chat</a>
-      <a href="social-feed.html" class="dashboard-button"><i class="fas fa-rss"></i> Social Feed</a>
-      <a href="blog.html" class="dashboard-button"><i class="fas fa-blog"></i> Blog</a>
-      <a href="groups.html" class="dashboard-button"><i class="fas fa-users-cog"></i> Groups</a>
-    </div>
+    const featureSections = document.getElementById("feature-sections");
+    const usernameEl = document.getElementById("username");
 
-    <!-- Learning & Resources -->
-    <div class="category-title">Learning & Resources</div>
-    <div class="dashboard-grid">
-      <a href="courses.html" class="dashboard-button"><i class="fas fa-graduation-cap"></i> Courses</a>
-      <a href="documentation.html" class="dashboard-button"><i class="fas fa-book"></i> Documentation</a>
-      <a href="tips.html" class="dashboard-button"><i class="fas fa-lightbulb"></i> Tips</a>
-    </div>
+    const themeToggle = () => {
+      document.body.classList.toggle("dark");
+    };
+    window.toggleTheme = themeToggle;
 
-    <!-- Web Tools -->
-    <div class="category-title">Web Tools</div>
-    <div class="dashboard-grid">
-      <a href="write-book.html" class="dashboard-button"><i class="fas fa-pen-nib"></i> Write a Book</a>
-      <a href="read-books.html" class="dashboard-button"><i class="fas fa-book-reader"></i> Read Books</a>
-      <a href="my-library.html" class="dashboard-button"><i class="fas fa-bookmark"></i> My Library</a>
-    </div>
+    const FEATURES = {
+      "Company Tools": [
+        { title: "Referrals", icon: "fa-user-plus", url: "referrals.html" },
+        { title: "File Sharing", icon: "fa-folder-open", url: "files.html" },
+        { title: "Announcements", icon: "fa-bullhorn", url: "announcements.html" },
+        { title: "Settings", icon: "fa-gear", url: "settings.html" },
+        { title: "Reports", icon: "fa-chart-line", url: "reports.html" },
+        { title: "Attendance", icon: "fa-calendar-check", url: "attendance.html" },
+        { title: "Schedules", icon: "fa-clock", url: "schedules.html" },
+        { title: "Finance", icon: "fa-coins", url: "finance.html" },
+        { title: "HR Tools", icon: "fa-people-group", url: "hr-tools.html" },
+        { title: "Goals", icon: "fa-bullseye", url: "goals.html" }
+      ],
+      "Social Features": [
+        { title: "Global Chat", icon: "fa-comments", url: "global-chat.html" },
+        { title: "Social Feed", icon: "fa-rss", url: "social-feed.html" },
+        { title: "Blog", icon: "fa-blog", url: "blog.html" },
+        { title: "Groups", icon: "fa-users", url: "groups.html" },
+        { title: "My Profile", icon: "fa-user", url: "user.html" },
+        { title: "Wall", icon: "fa-th-large", url: "wall.html" },
+        { title: "Reactions", icon: "fa-heart", url: "reactions.html" },
+        { title: "Stories", icon: "fa-camera", url: "stories.html" },
+        { title: "Events", icon: "fa-calendar", url: "events.html" },
+        { title: "Polls", icon: "fa-poll", url: "polls.html" }
+      ],
+      "Learning & Resources": [
+        { title: "Courses", icon: "fa-graduation-cap", url: "courses.html" },
+        { title: "Documentation", icon: "fa-file-alt", url: "documentation.html" },
+        { title: "Tips", icon: "fa-lightbulb", url: "tips.html" },
+        { title: "Books & Novels", icon: "fa-book", url: "books.html" },
+        { title: "Write a Book", icon: "fa-pen", url: "write-book.html" },
+        { title: "Read Books", icon: "fa-book-open", url: "read-books.html" },
+        { title: "My Library", icon: "fa-library", url: "my-library.html" },
+        { title: "Tutorials", icon: "fa-chalkboard-teacher", url: "tutorials.html" },
+        { title: "Quizzes", icon: "fa-question-circle", url: "quizzes.html" },
+        { title: "Certifications", icon: "fa-certificate", url: "certifications.html" }
+      ],
+      "Web Tools": [
+        { title: "Short Links", icon: "fa-link", url: "short-links.html" },
+        { title: "QR Generator", icon: "fa-qrcode", url: "qr.html" },
+        { title: "Notes", icon: "fa-sticky-note", url: "notes.html" },
+        { title: "Clipboard", icon: "fa-paste", url: "clipboard.html" },
+        { title: "Image Editor", icon: "fa-image", url: "image-editor.html" },
+        { title: "Video Tools", icon: "fa-video", url: "video-tools.html" },
+        { title: "Audio Tools", icon: "fa-music", url: "audio-tools.html" },
+        { title: "Converters", icon: "fa-exchange-alt", url: "converter.html" },
+        { title: "Upload Hub", icon: "fa-upload", url: "upload.html" },
+        { title: "Web Apps", icon: "fa-globe", url: "web-apps.html" }
+      ],
+      "User Utilities": [
+        { title: "User Search", icon: "fa-search", url: "search.html" },
+        { title: "Notifications", icon: "fa-bell", url: "notifications.html" },
+        { title: "Tasks", icon: "fa-tasks", url: "tasks.html" },
+        { title: "Calendar", icon: "fa-calendar-days", url: "calendar.html" },
+        { title: "Support", icon: "fa-headset", url: "support.html" },
+        { title: "Profile Settings", icon: "fa-user-cog", url: "profile-settings.html" },
+        { title: "Account Info", icon: "fa-id-badge", url: "account.html" },
+        { title: "Preferences", icon: "fa-sliders-h", url: "preferences.html" },
+        { title: "Feedback", icon: "fa-comment-dots", url: "feedback.html" },
+        { title: "Contact", icon: "fa-envelope", url: "contact.html" }
+      ],
+      "Admin Access": [
+        { title: "Admin Panel", icon: "fa-shield-alt", url: "admin.html" }
+      ]
+    };
 
-    <!-- Admin Access (Only visible if user is admin/owner) -->
-    <div class="category-title">Admin Access</div>
-    <div class="dashboard-grid">
-      <a href="admin-panel.html" class="dashboard-button"><i class="fas fa-tools"></i> Admin Panel</a>
-    </div>
-  </div>
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const tokenResult = await user.getIdTokenResult();
+        const role = tokenResult.claims.role || "user";
 
-  <script>
-    function toggleTheme() {
-      document.body.classList.toggle('dark');
+        usernameEl.textContent = `Welcome ${user.isAnonymous ? 'Guest' : (user.displayName || 'User')}`;
+
+        for (const category in FEATURES) {
+          if (category === 'Admin Access' && !(role === 'admin' || role === 'owner')) continue;
+
+          const sectionTitle = document.createElement("div");
+          sectionTitle.className = "category-title";
+          sectionTitle.textContent = category;
+          featureSections.appendChild(sectionTitle);
+
+          const grid = document.createElement("div");
+          grid.className = "dashboard-grid";
+
+          FEATURES[category].forEach((feature) => {
+            const link = document.createElement("a");
+            link.href = feature.url;
+            link.className = "dashboard-button";
+            link.innerHTML = `<i class="fa ${feature.icon}"></i> <span>${feature.title}</span>`;
+            grid.appendChild(link);
+          });
+
+          featureSections.appendChild(grid);
+        }
+      } else {
+        signInAnonymously(auth);
+      }
+    });
+
+    window.logout = function () {
+      signOut(auth).then(() => {
+        location.reload();
+      });
     }
-  </script>
-</body>
+  </script></body>
 </html>

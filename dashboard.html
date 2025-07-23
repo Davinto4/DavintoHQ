@@ -1,13 +1,12 @@
-<!DOCTYPE html><html lang="en">
+<!-- File: dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
     body {
       margin: 0;
@@ -57,7 +56,7 @@
       background: #fff;
       padding: 20px;
       border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       text-align: left;
       text-decoration: none;
       color: #333;
@@ -96,7 +95,9 @@
       </div>
     </div>
     <div id="feature-sections"></div>
-  </div>  <script type="module">
+  </div>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
     import {
       getAuth,
@@ -127,6 +128,16 @@
     const featureSections = document.getElementById("feature-sections");
     const usernameEl = document.getElementById("username");
 
+    const preferredOrder = [
+      "User Utilities",
+      "Company Tools",
+      "Social Features",
+      "Novel Zone",
+      "Learning & Resources",
+      "Web Tools",
+      "Admin Access"
+    ];
+
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         const tokenResult = await user.getIdTokenResult();
@@ -146,16 +157,6 @@
           }
           categories[data.category].push(data);
         });
-
-        const preferredOrder = [
-          "User Utilities",
-          "Company Tools",
-          "Social Features",
-          "Learning & Resources",
-          "Novel Zone",
-          "Web Tools",
-          "Admin Access"
-        ];
 
         preferredOrder.forEach(category => {
           if (!categories[category]) return;
@@ -192,5 +193,6 @@
     window.toggleTheme = function () {
       document.body.classList.toggle("dark-theme");
     }
-  </script></body>
+  </script>
+</body>
 </html>

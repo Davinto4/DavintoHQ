@@ -1,78 +1,30 @@
-/* Base Styles */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background-color: #f4f6f9;
-  color: #333;
-}
+/* Updated styles.css */
 
-/* Container */
-.container {
-  padding: 20px;
-  max-width: 1200px;
-  margin: auto;
-}
+:root { --bg-color: #f4f6f9; --text-color: #333; --primary-color: #4b7bec; --button-hover-bg: #e8f0fe; --dark-bg-color: #1e1e1e; --dark-text-color: #f4f4f4; --dark-button-bg: #2a2a2a; --dark-button-hover: #3a3a3a; }
 
-/* Header */
-.dashboard-header {
-  font-size: 32px;
-  font-weight: bold;
-  color: #222;
-  margin-bottom: 30px;
-}
+body { margin: 0; font-family: Arial, sans-serif; background: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; }
 
-/* Grid Layout */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 20px;
-}
+.dark-theme { --bg-color: var(--dark-bg-color); --text-color: var(--dark-text-color); }
 
-/* Button Styles */
-.dashboard-button {
-  display: block;
-  background-color: #ffffff;
-  color: #333;
-  text-align: center;
-  text-decoration: none;
-  padding: 20px;
-  font-weight: 600;
-  border-radius: 12px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease-in-out;
-}
+.container { padding: 20px; }
 
-.dashboard-button:hover {
-  background-color: #e0ecff;
-  transform: translateY(-2px);
-}
+.dashboard-header { font-size: 24px; font-weight: bold; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
 
-/* Section Separators (optional use in HTML later) */
-.section-title {
-  font-size: 18px;
-  font-weight: bold;
-  margin-top: 40px;
-  margin-bottom: 10px;
-  color: #444;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 5px;
-}
+.username { font-size: 16px; font-weight: normal; }
 
-/* Admin Highlight (optional) */
-.admin-button {
-  border-left: 5px solid #007bff;
-}
+.logout-button, .theme-toggle { padding: 5px 10px; margin-left: 10px; background: var(--primary-color); color: white; border: none; border-radius: 5px; cursor: pointer; transition: background 0.3s; }
 
-/* Responsive tweaks */
-@media (max-width: 600px) {
-  .dashboard-button {
-    padding: 16px;
-    font-size: 15px;
-  }
+.logout-button:hover, .theme-toggle:hover { background: #3a6fe2; }
 
-  .dashboard-header {
-    font-size: 24px;
-    text-align: center;
-  }
-}
+.dashboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; }
+
+.dashboard-button { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); text-align: left; text-decoration: none; color: var(--text-color); font-weight: bold; transition: background 0.3s; display: flex; gap: 10px; align-items: center; }
+
+.dark-theme .dashboard-button { background: var(--dark-button-bg); color: var(--dark-text-color); }
+
+.dashboard-button:hover { background: var(--button-hover-bg); }
+
+.dark-theme .dashboard-button:hover { background: var(--dark-button-hover); }
+
+.category-title { font-size: 20px; margin-top: 30px; margin-bottom: 10px; font-weight: bold; }
+

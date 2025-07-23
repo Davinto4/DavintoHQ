@@ -12,7 +12,7 @@
   <main class="flex-1 flex flex-col p-4">
     <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1>
 
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-3 mb-4"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
 
     <form id="chatForm" class="flex gap-2">
       <input id="chatInput" type="text" placeholder="Type your message..." required
@@ -24,21 +24,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      serverTimestamp,
-      onSnapshot,
-      query,
-      orderBy
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import {
-      getAuth,
-      signInAnonymously,
-      onAuthStateChanged,
-      updateProfile
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -50,8 +37,8 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
@@ -59,70 +46,54 @@
 
     let currentUser = null;
 
-    async function ensureLoggedIn() {
-      return new Promise((resolve, reject) => {
-        onAuthStateChanged(auth, async (user) => {
-          if (user) {
-            if (!user.displayName) {
-              const randomName = "User-" + Math.floor(Math.random() * 1000);
-              await updateProfile(user, { displayName: randomName });
-            }
-            currentUser = user;
-            resolve(user);
-            loadMessages();
-          } else {
-            signInAnonymously(auth).catch(reject);
-          }
-        });
-      });
-    }
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        loadMessages();
+      } else {
+        signInAnonymously(auth).catch(console.error);
+      }
+    });
 
-    function loadMessages() {
-      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
+    const loadMessages = () => {
+      const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
       onSnapshot(q, snapshot => {
         chatBox.innerHTML = "";
         snapshot.forEach(doc => {
           const msg = doc.data();
           const isMine = msg.uid === currentUser?.uid;
-          const name = msg.displayName || "Anonymous";
-          const time = msg.timestamp?.toDate?.()
-            ? new Date(msg.timestamp.toDate()).toLocaleTimeString()
-            : "Sending...";
-
-          const bubble = document.createElement("div");
-          bubble.className = `max-w-xs w-fit px-4 py-2 rounded-lg shadow ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"}`;
-
-          bubble.innerHTML = `
-            <p class="text-xs font-semibold text-gray-700 mb-1">${name}</p>
+          const div = document.createElement("div");
+          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+          div.innerHTML = `
+            <p class="text-sm font-medium text-gray-900">${msg.displayName || "Anonymous"}</p>
             <p class="text-sm">${msg.text}</p>
-            <p class="text-[10px] text-gray-500 text-right mt-1">${time}</p>
+            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
           `;
-
-          chatBox.appendChild(bubble);
+          chatBox.appendChild(div);
         });
         chatBox.scrollTop = chatBox.scrollHeight;
       });
-    }
+    };
 
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
       if (!text) return;
 
-      // Ensure user is authenticated before sending
-      if (!currentUser) await ensureLoggedIn();
-
-      await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
-        text,
-        displayName: currentUser.displayName || "Anonymous",
-        timestamp: serverTimestamp()
-      });
-
-      chatInput.value = "";
+      try {
+        await addDoc(collection(db, "chats"), {
+          uid: currentUser.uid,
+          text,
+          displayName: currentUser.displayName || "Anonymous",
+          timestamp: serverTimestamp()
+        });
+        chatInput.value = "";
+      } catch (error) {
+        console.error("Message send failed:", error);
+        alert("Message failed to send. Please try again.");
+      }
     });
 
-    ensureLoggedIn().catch(console.error);
     import("./sidebar.js").then(m => m.loadSidebar());
   </script>
 </body>

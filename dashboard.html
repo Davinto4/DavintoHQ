@@ -2,52 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ | Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"></script>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXRXFIf1FfZZa+z6MlIuTY2vZ3I3Zl9U6vbBSldYw1C+Fzq7YXEtcDjVdYccp8VvZBXYK7hw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #f4f6f9;
+      transition: background 0.3s, color 0.3s;
     }
-    .topbar {
+    .dark-theme {
+      background: #1e1e2f;
+      color: #f0f0f0;
+    }
+    .container {
+      padding: 20px;
+    }
+    .dashboard-header {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 20px;
       display: flex;
       justify-content: space-between;
-      padding: 15px 25px;
-      background: #222;
-      color: white;
+      align-items: center;
     }
     .username {
-      font-weight: bold;
-      color: #4caf50;
+      font-size: 16px;
     }
-    .logout-btn {
-      background: crimson;
-      color: white;
+    .logout-button, .theme-toggle {
+      margin-left: 10px;
       padding: 6px 12px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
     }
-    .container {
-      padding: 20px;
+    .logout-button {
+      background: #e74c3c;
+      color: white;
     }
-    .category {
-      margin-top: 40px;
-    }
-    .category-title {
-      font-size: 22px;
-      margin-bottom: 15px;
-      color: #333;
-      font-weight: bold;
+    .theme-toggle {
+      background: #3498db;
+      color: white;
     }
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
       gap: 15px;
     }
     .dashboard-button {
@@ -55,31 +56,62 @@
       padding: 15px;
       border-radius: 10px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      text-align: center;
+      text-align: left;
       text-decoration: none;
       color: #333;
       font-weight: bold;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
       transition: background 0.3s;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .dark-theme .dashboard-button {
+      background: #2e2e3e;
+      color: #fff;
     }
     .dashboard-button:hover {
       background: #e8f0fe;
     }
+    .dark-theme .dashboard-button:hover {
+      background: #3d3d55;
+    }
+    .category-title {
+      font-size: 20px;
+      margin-top: 30px;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <div>Welcome, <span class="username" id="username">...</span></div>
-    <button class="logout-btn" onclick="logout()">Logout</button>
-  </div>
-  <div class="container" id="featureContainer">
-    <!-- Features will be loaded here -->
+  <div class="container">
+    <div class="dashboard-header">
+      <div>DavintoHQ Dashboard</div>
+      <div>
+        <span id="username" class="username">Welcome</span>
+        <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+        <button class="logout-button" onclick="logout()">Logout</button>
+      </div>
+    </div>
+
+    <div id="feature-sections"></div>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      query,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
@@ -89,88 +121,75 @@
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
 
-    let currentUserRole = null;
+    const usernameEl = document.getElementById("username");
+    const featureSections = document.getElementById("feature-sections");
 
-    function logout() {
-      auth.signOut().then(() => {
-        location.href = 'index.html';
-      });
-    }
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        const tokenResult = await user.getIdTokenResult();
+        const role = tokenResult.claims.role || "user";
+        usernameEl.textContent = `Welcome ${user.isAnonymous ? 'Guest' : (user.displayName || 'User')}`;
 
-    function renderFeaturesByCategory(grouped) {
-      const container = document.getElementById('featureContainer');
-      container.innerHTML = '';
-      const order = [
-        "User Utilities", "Company Tools", "Social Features",
-        "Learning & Resources", "Web Tools", "Books & Novels", "Support", "Admin Access"
-      ];
+        const q = query(collection(db, "features"));
+        const snapshot = await getDocs(q);
 
-      for (const categoryName of order) {
-        if (!grouped[categoryName]) continue;
+        const categories = {};
 
-        const category = document.createElement('div');
-        category.className = 'category';
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.role === "admin" && role !== "admin" && role !== "owner") return;
 
-        const title = document.createElement('div');
-        title.className = 'category-title';
-        title.textContent = categoryName;
-        category.appendChild(title);
-
-        const grid = document.createElement('div');
-        grid.className = 'dashboard-grid';
-
-        grouped[categoryName].forEach(feature => {
-          const button = document.createElement('a');
-          button.className = 'dashboard-button';
-          button.href = feature.url;
-          button.innerHTML = `${feature.icon || "📌"} <span>${feature.title}</span>`;
-          grid.appendChild(button);
+          const cat = data.category || "Other";
+          if (!categories[cat]) categories[cat] = [];
+          categories[cat].push(data);
         });
 
-        category.appendChild(grid);
-        container.appendChild(category);
-      }
-    }
+        const order = [
+          "User Utilities",
+          "Company Tools",
+          "Social Features",
+          "Learning & Resources",
+          "Web Tools",
+          "Admin Access"
+        ];
 
-    function loadFeatures() {
-      db.collection("features").get().then(snapshot => {
-        const grouped = {};
-        snapshot.forEach(doc => {
-          const feature = doc.data();
+        for (const section of order) {
+          if (categories[section]) {
+            const title = document.createElement("div");
+            title.className = "category-title";
+            title.textContent = section;
+            featureSections.appendChild(title);
 
-          if (feature.access === "admin" && currentUserRole !== "admin" && currentUserRole !== "owner") {
-            return; // skip if restricted
+            const grid = document.createElement("div");
+            grid.className = "dashboard-grid";
+
+            categories[section].forEach((feature) => {
+              const link = document.createElement("a");
+              link.href = feature.url;
+              link.className = "dashboard-button";
+              link.innerHTML = `<i class="${feature.icon || 'fas fa-link'}"></i><span>${feature.title}</span>`;
+              grid.appendChild(link);
+            });
+
+            featureSections.appendChild(grid);
           }
-
-          const category = feature.category || "Others";
-          if (!grouped[category]) grouped[category] = [];
-          grouped[category].push(feature);
-        });
-
-        renderFeaturesByCategory(grouped);
-      });
-    }
-
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) return location.href = 'index.html';
-
-      const userRef = db.collection("users").doc(user.uid);
-      const snap = await userRef.get();
-
-      if (snap.exists) {
-        const userData = snap.data();
-        currentUserRole = userData.role || 'user';
-        document.getElementById('username').textContent = userData.username || "User";
-        loadFeatures();
+        }
       } else {
-        alert("User data not found!");
-        logout();
+        signInAnonymously(auth);
       }
     });
+
+    window.logout = () => {
+      signOut(auth).then(() => location.reload());
+    };
+
+    window.toggleTheme = () => {
+      document.body.classList.toggle("dark-theme");
+    };
   </script>
 </body>
 </html>

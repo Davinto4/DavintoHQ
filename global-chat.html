@@ -24,8 +24,8 @@
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -37,61 +37,74 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
 
     let currentUser = null;
+    let currentEmail = null;
 
     onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
+        currentEmail = user.email || '';
         loadMessages();
       } else {
-        signInAnonymously(auth).catch(console.error);
+        const provider = new GoogleAuthProvider();
+        signInWithPopup(auth, provider).catch(console.error);
       }
     });
 
     const loadMessages = () => {
-      const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
       onSnapshot(q, snapshot => {
         chatBox.innerHTML = "";
-        snapshot.forEach(doc => {
-          const msg = doc.data();
+        snapshot.forEach(docSnap => {
+          const msg = docSnap.data();
+          const id = docSnap.id;
           const isMine = msg.uid === currentUser?.uid;
+          const isAdmin = currentEmail === "macdinodavinto@gmail.com";
+
           const div = document.createElement("div");
-          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow relative`;
           div.innerHTML = `
-            <p class="text-sm font-medium text-gray-900">${msg.displayName || "Anonymous"}</p>
+            <p class="font-bold text-sm text-blue-800">${msg.username || "User"}</p>
             <p class="text-sm">${msg.text}</p>
             <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            ${isMine || isAdmin ? `<button data-id="${id}" class="deleteBtn text-xs text-red-500 absolute top-1 right-1">✖</button>` : ""}
           `;
           chatBox.appendChild(div);
         });
         chatBox.scrollTop = chatBox.scrollHeight;
+        addDeleteListeners();
+      });
+    };
+
+    const addDeleteListeners = () => {
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.addEventListener("click", async (e) => {
+          const id = e.target.dataset.id;
+          await deleteDoc(doc(db, "globalChats", id));
+        });
       });
     };
 
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text) return;
+      if (!text || !currentUser) return;
 
-      try {
-        await addDoc(collection(db, "chats"), {
-          uid: currentUser.uid,
-          text,
-          displayName: currentUser.displayName || "Anonymous",
-          timestamp: serverTimestamp()
-        });
-        chatInput.value = "";
-      } catch (error) {
-        console.error("Message send failed:", error);
-        alert("Message failed to send. Please try again.");
-      }
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        username: currentUser.displayName || "Anonymous",
+        text,
+        timestamp: serverTimestamp()
+      });
+
+      chatInput.value = "";
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());

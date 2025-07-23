@@ -1,0 +1,124 @@
+<!-- user.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>User Profile - DavintoHQ</title>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-xl mx-auto bg-white p-6 rounded shadow">
+    <h2 class="text-xl font-bold mb-4">👤 My Profile</h2>
+
+    <form id="profileForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium">Username</label>
+        <input type="text" id="username" class="w-full p-2 border rounded" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium">Email</label>
+        <input type="email" id="email" class="w-full p-2 border rounded bg-gray-100" readonly />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium">Phone</label>
+        <input type="text" id="phone" class="w-full p-2 border rounded" />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium">Role</label>
+        <select id="role" class="w-full p-2 border rounded bg-gray-100 cursor-not-allowed" disabled>
+          <option value="user">User</option>
+          <option value="admin">Admin</option>
+          <option value="owner">Owner</option>
+        </select>
+      </div>
+
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save Changes</button>
+    </form>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+
+    const usernameInput = document.getElementById("username");
+    const emailInput = document.getElementById("email");
+    const phoneInput = document.getElementById("phone");
+    const roleSelect = document.getElementById("role");
+
+    let currentUserUID = null;
+    let currentRole = "user";
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        alert("Not logged in");
+        return;
+      }
+
+      currentUserUID = user.uid;
+      emailInput.value = user.email;
+
+      const userRef = doc(db, "users", currentUserUID);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const data = userSnap.data();
+        usernameInput.value = data.username || "";
+        phoneInput.value = data.phone || "";
+        roleSelect.value = data.role || "user";
+        currentRole = data.role || "user";
+
+        if (["admin", "owner"].includes(currentRole)) {
+          roleSelect.disabled = false;
+          roleSelect.classList.remove("bg-gray-100", "cursor-not-allowed");
+        }
+      }
+    });
+
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const updatedData = {
+        username: usernameInput.value.trim(),
+        phone: phoneInput.value.trim()
+      };
+
+      if (["admin", "owner"].includes(currentRole)) {
+        updatedData.role = roleSelect.value;
+      }
+
+      try {
+        await updateDoc(doc(db, "users", currentUserUID), updatedData);
+        alert("Profile updated!");
+      } catch (err) {
+        console.error(err);
+        alert("Error updating profile.");
+      }
+    });
+  </script>
+</body>
+</html>

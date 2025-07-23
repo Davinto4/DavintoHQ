@@ -8,8 +8,8 @@
   <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f4f6f9;
+      font-family: 'Segoe UI', sans-serif;
+      background: #f0f4f8;
     }
     .container {
       padding: 20px;
@@ -17,14 +17,14 @@
     .dashboard-header {
       font-size: 28px;
       font-weight: bold;
-      margin-bottom: 20px;
+      margin-bottom: 25px;
+      text-align: center;
     }
     .category-title {
-      font-size: 18px;
-      margin-top: 40px;
-      margin-bottom: 10px;
-      font-weight: bold;
-      color: #555;
+      font-size: 20px;
+      font-weight: 600;
+      margin: 40px 0 15px;
+      color: #2a2a2a;
     }
     .dashboard-grid {
       display: grid;
@@ -32,18 +32,21 @@
       gap: 15px;
     }
     .dashboard-button {
-      background: #fff;
-      padding: 15px;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      background: #ffffffcc;
+      backdrop-filter: blur(6px);
+      border-radius: 12px;
+      padding: 18px;
       text-align: center;
+      font-weight: 600;
       text-decoration: none;
-      color: #333;
-      font-weight: bold;
-      transition: background 0.3s;
+      color: #1a1a1a;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+      transition: all 0.3s ease;
     }
     .dashboard-button:hover {
-      background: #e8f0fe;
+      background: #d0e8ff;
+      transform: scale(1.03);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.1);
     }
   </style>
 </head>
@@ -51,47 +54,59 @@
   <div class="container">
     <div class="dashboard-header">DavintoHQ Dashboard</div>
 
-    <!-- Important Tools -->
-    <div class="category-title">Core Tools</div>
+    <!-- Important -->
+    <div class="category-title">Important Tools</div>
     <div class="dashboard-grid">
       <a href="files.html" class="dashboard-button">File Sharing</a>
       <a href="announcements.html" class="dashboard-button">Announcements</a>
       <a href="settings.html" class="dashboard-button">Settings</a>
-      <a href="social-feed.html" class="dashboard-button">Social Feed</a>
       <a href="global-chat.html" class="dashboard-button">Global Chat</a>
+      <a href="social-feed.html" class="dashboard-button">Social Feed</a>
+    </div>
+
+    <!-- User Utilities -->
+    <div class="category-title">User Utilities</div>
+    <div class="dashboard-grid">
       <a href="user.html" class="dashboard-button">My Profile</a>
       <a href="search.html" class="dashboard-button">User Search</a>
-      <a href="blog.html" class="dashboard-button">Blog</a>
+      <a href="notifications.html" class="dashboard-button">Notifications</a>
+      <a href="tasks.html" class="dashboard-button">Tasks</a>
+      <a href="calendar.html" class="dashboard-button">Calendar</a>
+      <a href="coming-soon.html" class="dashboard-button">Theme</a>
+      <a href="coming-soon.html" class="dashboard-button">Security</a>
+      <a href="coming-soon.html" class="dashboard-button">Account Settings</a>
+      <a href="support.html" class="dashboard-button">Support</a>
+      <a href="feedback.html" class="dashboard-button">Feedback</a>
     </div>
 
     <!-- Company Tools -->
     <div class="category-title">Company Tools</div>
     <div class="dashboard-grid">
       <a href="referrals.html" class="dashboard-button">Referrals</a>
+      <a href="coming-soon.html" class="dashboard-button">Company Calendar</a>
       <a href="coming-soon.html" class="dashboard-button">Shift Management</a>
       <a href="coming-soon.html" class="dashboard-button">Leave Requests</a>
-      <a href="coming-soon.html" class="dashboard-button">HR Desk</a>
-      <a href="coming-soon.html" class="dashboard-button">Company Calendar</a>
       <a href="coming-soon.html" class="dashboard-button">Activity Logs</a>
-      <a href="coming-soon.html" class="dashboard-button">Tasks</a>
-      <a href="coming-soon.html" class="dashboard-button">Support</a>
       <a href="coming-soon.html" class="dashboard-button">Issue Tracker</a>
-      <a href="coming-soon.html" class="dashboard-button">FAQ</a>
+      <a href="coming-soon.html" class="dashboard-button">HR Desk</a>
+      <a href="coming-soon.html" class="dashboard-button">Team Overview</a>
+      <a href="coming-soon.html" class="dashboard-button">Attendance</a>
+      <a href="coming-soon.html" class="dashboard-button">Job Desk</a>
     </div>
 
     <!-- Social Features -->
     <div class="category-title">Social Features</div>
     <div class="dashboard-grid">
+      <a href="blog.html" class="dashboard-button">Blog</a>
       <a href="coming-soon.html" class="dashboard-button">Groups</a>
       <a href="coming-soon.html" class="dashboard-button">Friends</a>
-      <a href="coming-soon.html" class="dashboard-button">Mentions</a>
-      <a href="coming-soon.html" class="dashboard-button">Trending</a>
-      <a href="coming-soon.html" class="dashboard-button">Feeds Filter</a>
       <a href="coming-soon.html" class="dashboard-button">Likes & Reactions</a>
       <a href="coming-soon.html" class="dashboard-button">Stories</a>
-      <a href="coming-soon.html" class="dashboard-button">Followers</a>
-      <a href="coming-soon.html" class="dashboard-button">Comments</a>
-      <a href="coming-soon.html" class="dashboard-button">Share Posts</a>
+      <a href="coming-soon.html" class="dashboard-button">Trending</a>
+      <a href="coming-soon.html" class="dashboard-button">Feeds Filter</a>
+      <a href="coming-soon.html" class="dashboard-button">Mentions</a>
+      <a href="coming-soon.html" class="dashboard-button">Profile Visitors</a>
+      <a href="coming-soon.html" class="dashboard-button">Tagged Posts</a>
     </div>
 
     <!-- Learning & Resources -->
@@ -101,9 +116,9 @@
       <a href="coming-soon.html" class="dashboard-button">Documentation</a>
       <a href="coming-soon.html" class="dashboard-button">Tips</a>
       <a href="coming-soon.html" class="dashboard-button">Web Tools</a>
+      <a href="coming-soon.html" class="dashboard-button">Developer Docs</a>
       <a href="coming-soon.html" class="dashboard-button">Video Tutorials</a>
       <a href="coming-soon.html" class="dashboard-button">Guides</a>
-      <a href="coming-soon.html" class="dashboard-button">Developer Docs</a>
       <a href="coming-soon.html" class="dashboard-button">API Access</a>
       <a href="coming-soon.html" class="dashboard-button">Changelog</a>
       <a href="coming-soon.html" class="dashboard-button">Roadmap</a>
@@ -117,29 +132,14 @@
       <a href="coming-soon.html" class="dashboard-button">My Library</a>
       <a href="coming-soon.html" class="dashboard-button">Genres</a>
       <a href="coming-soon.html" class="dashboard-button">Authors</a>
-      <a href="coming-soon.html" class="dashboard-button">Bookmarks</a>
       <a href="coming-soon.html" class="dashboard-button">Reading List</a>
+      <a href="coming-soon.html" class="dashboard-button">Bookmarks</a>
       <a href="coming-soon.html" class="dashboard-button">Quotes</a>
-      <a href="coming-soon.html" class="dashboard-button">Community Reviews</a>
+      <a href="coming-soon.html" class="dashboard-button">Reviews</a>
       <a href="coming-soon.html" class="dashboard-button">Publishing Tools</a>
     </div>
 
-    <!-- User Utilities -->
-    <div class="category-title">User Utilities</div>
-    <div class="dashboard-grid">
-      <a href="coming-soon.html" class="dashboard-button">Notifications</a>
-      <a href="coming-soon.html" class="dashboard-button">Calendar</a>
-      <a href="coming-soon.html" class="dashboard-button">Feedback</a>
-      <a href="coming-soon.html" class="dashboard-button">Theme</a>
-      <a href="coming-soon.html" class="dashboard-button">Security</a>
-      <a href="coming-soon.html" class="dashboard-button">Account Settings</a>
-      <a href="coming-soon.html" class="dashboard-button">Language</a>
-      <a href="coming-soon.html" class="dashboard-button">Dark Mode</a>
-      <a href="coming-soon.html" class="dashboard-button">Privacy Settings</a>
-      <a href="coming-soon.html" class="dashboard-button">Logout</a>
-    </div>
-
-    <!-- Admin Section -->
+    <!-- Admin -->
     <div class="category-title">Admin Access</div>
     <div class="dashboard-grid">
       <a href="admin.html" class="dashboard-button">Admin Panel</a>

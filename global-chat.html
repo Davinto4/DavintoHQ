@@ -95,11 +95,29 @@
           div.innerHTML = `
             <p class="text-sm font-semibold">${senderName}</p>
             <p class="text-sm">${msg.text}</p>
-            <p class="text-xs text-gray-500 text-right">${msg.timestamp?.toDate?.() ? new Date(msg.timestamp.toDate()).toLocaleTimeString() : "Just now"}</p>
+            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            <div class="flex justify-end gap-1 mt-1">
+              ${isMine ? `<button class="text-xs text-yellow-600 hover:underline" onclick="editMessage('${docSnap.id}', '${msg.text}')">✏️ Edit</button>
+                          <button class="text-xs text-red-600 hover:underline" onclick="deleteMessage('${docSnap.id}')">🗑️ Delete</button>` : ''}
+              ${currentUser.email === "macdinodavinto@gmail.com" ? `<button class="text-xs text-red-700 hover:underline" onclick="deleteMessage('${docSnap.id}')">Admin Delete</button>` : ''}
+            </div>
           `;
           chatArea.appendChild(div);
         }
       });
+    }
+
+    window.editMessage = async (id, oldText) => {
+      const newText = prompt("Edit your message:", oldText);
+      if (newText && newText.trim()) {
+        await updateDoc(doc(db, "chats", id), { text: newText.trim() });
+      }
+    }
+
+    window.deleteMessage = async (id) => {
+      if (confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "chats", id));
+      }
     }
   </script></body>
 </html>

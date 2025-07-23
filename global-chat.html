@@ -1,76 +1,109 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Chat</title>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Global Chat - DavintoHQ</title>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"/>
 </head>
-<body class="bg-gray-100"><div class="flex flex-col h-screen">
-  <div class="bg-white p-4 shadow flex items-center justify-between">
-    <h1 class="text-xl font-bold">Global Chat</h1>
-    <button id="logoutBtn" class="text-sm text-red-500 font-medium">Logout</button>
-  </div>  <div id="chatArea" class="flex-1 overflow-y-auto px-4 py-2 flex flex-col-reverse space-y-2-reverse bg-gray-50">
-    <!-- Messages will be injected here -->
-  </div>  <div class="p-4 bg-white shadow-inner sticky bottom-0">
-    <form id="messageForm" class="flex items-center space-x-2">
-      <input id="messageInput" type="text" placeholder="Type your message..."
-             class="flex-1 border rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400" required />
-      <button type="submit"
-              class="bg-blue-500 text-white rounded-full px-4 py-2 hover:bg-blue-600 transition">Send</button>
-    </form>
+<body class="flex flex-col h-screen bg-gradient-to-br from-blue-300 via-blue-200 to-blue-400 backdrop-blur-md">
+  <div class="p-4 bg-white/40 backdrop-blur-md shadow-md sticky top-0 z-10">
+    <h1 class="text-xl font-bold text-gray-800">🌐 Global Chat</h1>
   </div>
-</div><script>
-  const firebaseConfig = {
-    apiKey: 'AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk',
-    authDomain: 'izuchukwu-foods.firebaseapp.com',
-    projectId: 'izuchukwu-foods',
-    storageBucket: 'izuchukwu-foods.appspot.com',
-    messagingSenderId: '811147638426',
-    appId: '1:811147638426:web:f2403b6cf7e0b6f19b1123'
-  };
 
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
-  const db = firebase.firestore();
+  <div id="chatArea" class="flex-1 overflow-y-auto px-4 py-2 flex flex-col space-y-2 backdrop-blur-md bg-white/40 rounded-md shadow-inner"></div>
 
-  const chatArea = document.getElementById("chatArea");
-  const messageForm = document.getElementById("messageForm");
-  const messageInput = document.getElementById("messageInput");
-  const logoutBtn = document.getElementById("logoutBtn");
+  <div class="p-4 bg-white/40 backdrop-blur-md shadow-inner sticky bottom-0 z-10">
+    <div class="flex gap-2">
+      <input id="messageInput" type="text" placeholder="Type a message..."
+             class="flex-1 p-2 border rounded-md focus:outline-none focus:ring bg-white/70"/>
+      <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded">Send</button>
+    </div>
+  </div>
 
-  let currentUser = null;
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      doc,
+      getDoc,
+      deleteDoc,
+      updateDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  auth.onAuthStateChanged(async user => {
-    if (!user) {
-      window.location.href = "/login.html";
-    } else {
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth();
+    const db = getFirestore(app);
+
+    const messageInput = document.getElementById("messageInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const chatArea = document.getElementById("chatArea");
+
+    let currentUser;
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) return;
       currentUser = user;
       listenToMessages();
+    });
+
+    async function getUsername(uid) {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      return userDoc.exists() ? userDoc.data().username || "Unnamed" : "Unknown";
     }
-  });
 
-  logoutBtn.onclick = () => auth.signOut();
+    async function sendMessage() {
+      const text = messageInput.value.trim();
+      if (!text || !currentUser) return;
 
-  async function getUsername(uid) {
-    try {
-      const doc = await db.collection("users").doc(uid).get();
-      return doc.exists ? doc.data().username || "Unnamed" : "Unnamed";
-    } catch (e) {
-      return "Unnamed";
+      let replyTo = null;
+      if (text.startsWith("@reply:")) {
+        const parts = text.split(" ");
+        replyTo = parts[0].replace("@reply:", "");
+        messageInput.value = parts.slice(1).join(" ");
+      }
+
+      await addDoc(collection(db, "chats"), {
+        uid: currentUser.uid,
+        text: messageInput.value.trim(),
+        timestamp: serverTimestamp(),
+        reactions: {},
+        replyTo
+      });
+
+      messageInput.value = "";
     }
-  }
 
-  function listenToMessages() {
-    db.collection("chats")
-      .orderBy("timestamp", "desc")
-      .limit(50)
-      .onSnapshot(async snapshot => {
+    sendBtn.addEventListener("click", sendMessage);
+    messageInput.addEventListener("keypress", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    function listenToMessages() {
+      const q = query(collection(db, "chats"), orderBy("timestamp"));
+      onSnapshot(q, async (snapshot) => {
         chatArea.innerHTML = "";
-        const messages = [];
-
         for (const docSnap of snapshot.docs) {
           const msg = docSnap.data();
           const id = docSnap.id;
@@ -78,33 +111,58 @@
           const isMine = msg.uid === currentUser?.uid;
 
           const div = document.createElement("div");
-          div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-green-100 self-end ml-auto" : "bg-white"} shadow border`;
+          div.className = `p-2 rounded-xl max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-white/70"} shadow border`;
+
+          const reactionsHTML = ['👍','❤️','😂'].map(r => {
+            const count = msg.reactions?.[r]?.length || 0;
+            return `<button onclick="react('${id}', '${r}')" class="text-xs">${r} ${count}</button>`;
+          }).join(' ');
 
           div.innerHTML = `
-            <p class="text-sm font-semibold">${senderName}</p>
-            <p class="text-sm">${msg.text}</p>
-            <p class="text-xs text-gray-400 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            <p class="text-sm font-semibold text-gray-800">${senderName}</p>
+            ${msg.replyTo ? `<p class="text-xs italic text-blue-500">Replying to ${msg.replyTo}</p>` : ''}
+            <p class="text-base">${msg.text}</p>
+            <div class="flex gap-1 text-xs mt-1">${reactionsHTML}</div>
+            <p class="text-[10px] text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            <div class="flex gap-2 mt-1 text-xs text-blue-600">
+              <button onclick="replyMessage('${id}', '${msg.text}')">Reply</button>
+              ${isMine ? `<button onclick="editMessage('${id}', '${msg.text}')">Edit</button><button onclick="deleteMessage('${id}')">Delete</button>` : ''}
+              ${currentUser.email === "macdinodavinto@gmail.com" ? `<button onclick="deleteMessage('${id}')">Admin Delete</button>` : ''}
+            </div>
           `;
 
-          messages.push(div);
+          chatArea.appendChild(div);
         }
-
-        messages.reverse().forEach(m => chatArea.appendChild(m));
+        chatArea.scrollTop = chatArea.scrollHeight;
       });
-  }
+    }
 
-  messageForm.onsubmit = async (e) => {
-    e.preventDefault();
-    const text = messageInput.value.trim();
-    if (!text) return;
+    window.react = async function (id, emoji) {
+      const ref = doc(db, "chats", id);
+      const msg = (await getDoc(ref)).data();
+      const currentReactions = msg.reactions || {};
+      const userList = new Set(currentReactions[emoji] || []);
+      if (userList.has(currentUser.uid)) userList.delete(currentUser.uid);
+      else userList.add(currentUser.uid);
+      currentReactions[emoji] = Array.from(userList);
+      await updateDoc(ref, { reactions: currentReactions });
+    }
 
-    await db.collection("chats").add({
-      text,
-      uid: currentUser.uid,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    });
+    window.deleteMessage = async function (id) {
+      await deleteDoc(doc(db, "chats", id));
+    }
 
-    messageInput.value = "";
-  }
-</script></body>
+    window.editMessage = async function (id, oldText) {
+      const newText = prompt("Edit your message:", oldText);
+      if (newText && newText !== oldText) {
+        await updateDoc(doc(db, "chats", id), { text: newText });
+      }
+    }
+
+    window.replyMessage = function (id, originalText) {
+      messageInput.value = `@reply:${id} `;
+      messageInput.focus();
+    }
+  </script>
+</body>
 </html>

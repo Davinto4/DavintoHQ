@@ -1,10 +1,12 @@
 <!DOCTYPE html><html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
   <style>
     body {
       margin: 0;
@@ -19,165 +21,139 @@
       font-weight: bold;
       margin-bottom: 10px;
     }
-    .user-highlight {
+    .dashboard-subheader {
       font-size: 16px;
-      color: #666;
-      margin-bottom: 10px;
-    }
-    .dashboard-section-title {
-      font-size: 20px;
-      font-weight: bold;
-      margin: 40px 0 15px;
-      border-bottom: 2px solid #ccc;
-      padding-bottom: 5px;
+      color: #555;
+      margin-bottom: 30px;
     }
     .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
       gap: 15px;
     }
     .dashboard-button {
       background: #fff;
       padding: 15px;
       border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: left;
       text-decoration: none;
       color: #333;
       font-weight: bold;
-      transition: background 0.3s;
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 10px;
+      transition: background 0.3s;
     }
     .dashboard-button:hover {
       background: #e8f0fe;
     }
-    .logout-container {
-      text-align: right;
-      margin-bottom: 20px;
-    }
-    .logout-btn {
-      background-color: #ff4d4d;
-      color: white;
-      border: none;
-      padding: 10px 16px;
+    .category-title {
+      font-size: 20px;
       font-weight: bold;
-      border-radius: 6px;
+      margin: 40px 0 15px;
+    }
+    .logout-button {
+      float: right;
+      padding: 10px 20px;
+      background: #d9534f;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
       cursor: pointer;
+    }
+    .icon {
+      font-size: 20px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="logout-container">
-      <button id="logoutBtn" class="logout-btn">Logout</button>
-    </div><div class="dashboard-header">DavintoHQ Dashboard</div>
-<div id="userInfo" class="user-highlight">Loading user...</div>
-
-<div id="dashboardSections"></div>
+    <div class="dashboard-header">
+      DavintoHQ Dashboard
+      <button class="logout-button" onclick="logout()">Logout</button>
+    </div>
+    <div class="dashboard-subheader" id="username-display">Loading user...</div><div id="dashboard-content"></div>
 
   </div>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
-      authDomain: "izuchukwu-foods.firebaseapp.com",
-      projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
-      messagingSenderId: "811147638426",
-      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    document.getElementById("logoutBtn").addEventListener("click", () => {
-      signOut(auth).then(() => {
-        window.location.href = "index.html";
-      }).catch((error) => {
-        alert("Logout failed: " + error.message);
-      });
-    });
+    let userRole = "user";
 
-    const FEATURES = {
-      "User Utilities": [
-        { icon: "fa-user", name: "My Profile", href: "user.html" },
-        { icon: "fa-search", name: "User Search", href: "search.html" },
-        { icon: "fa-bell", name: "Notifications", href: "notifications.html" },
-        { icon: "fa-tasks", name: "Tasks", href: "tasks.html" },
-        { icon: "fa-calendar", name: "Calendar", href: "calendar.html" },
-        { icon: "fa-life-ring", name: "Support", href: "support.html" },
-      ],
-      "Company Tools": [
-        { icon: "fa-users", name: "Referrals", href: "referrals.html" },
-        { icon: "fa-folder", name: "File Sharing", href: "files.html" },
-        { icon: "fa-bullhorn", name: "Announcements", href: "announcements.html" },
-        { icon: "fa-cog", name: "Settings", href: "settings.html" },
-      ],
-      "Social Features": [
-        { icon: "fa-comments", name: "Global Chat", href: "global-chat.html" },
-        { icon: "fa-rss", name: "Social Feed", href: "social-feed.html" },
-        { icon: "fa-blog", name: "Blog", href: "blog.html" },
-        { icon: "fa-users-viewfinder", name: "Groups", href: "groups.html" },
-        { icon: "fa-thumbs-up", name: "Likes & Reactions", href: "likes.html" },
-        { icon: "fa-star", name: "Trending", href: "trending.html" },
-        { icon: "fa-at", name: "Mentions", href: "mentions.html" },
-        { icon: "fa-filter", name: "Feeds Filter", href: "filters.html" },
-      ],
-      "Learning & Resources": [
-        { icon: "fa-chalkboard-teacher", name: "Courses", href: "courses.html" },
-        { icon: "fa-book", name: "Documentation", href: "documentation.html" },
-        { icon: "fa-lightbulb", name: "Tips", href: "tips.html" },
-        { icon: "fa-tools", name: "Web Tools", href: "web-tools.html" },
-      ],
-      "Books & Novels": [
-        { icon: "fa-pen-nib", name: "Write a Book", href: "write-book.html" },
-        { icon: "fa-book-reader", name: "Read Books", href: "read-books.html" },
-        { icon: "fa-bookmark", name: "My Library", href: "my-library.html" },
-      ],
-      "Other Tools": [
-        { icon: "fa-question-circle", name: "FAQ", href: "faq.html" },
-        { icon: "fa-comment-dots", name: "Feedback", href: "feedback.html" },
-        { icon: "fa-shield-alt", name: "Security", href: "security.html" },
-        { icon: "fa-sliders-h", name: "Theme", href: "theme.html" },
-      ]
-    };
-
-    const ADMIN_FEATURE = { icon: "fa-lock", name: "Admin Panel", href: "admin.html" };
-
-    function createSection(title, features) {
-      let section = `<div class='dashboard-section-title'>${title}</div><div class='dashboard-grid'>`;
-      features.forEach(f => {
-        section += `<a class="dashboard-button" href="${f.href}"><i class="fas ${f.icon}"></i> ${f.name}</a>`;
-      });
-      section += '</div>';
-      return section;
-    }
-
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, async user => {
       if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.exists() ? userDoc.data() : {};
-        document.getElementById("userInfo").innerText = `Welcome, ${userData.username || "User""}`;
+        document.getElementById("username-display").textContent = `Welcome, ${user.displayName || user.email || 'User'}`;
 
-        let content = "";
-        for (let category in FEATURES) {
-          content += createSection(category, FEATURES[category]);
-        }
+        // Get user role
+        const userDoc = await getDocs(collection(db, "users"));
+        userDoc.forEach(doc => {
+          if (doc.id === user.uid) {
+            userRole = doc.data().role || "user";
+          }
+        });
 
-        if (["admin", "owner"].includes(userData.role)) {
-          content += createSection("Admin Access", [ADMIN_FEATURE]);
-        }
-
-        document.getElementById("dashboardSections").innerHTML = content;
+        loadFeatures();
       } else {
-        window.location.href = "index.html";
+        window.location.href = "login.html";
       }
     });
+
+    async function loadFeatures() {
+      const featureSnap = await getDocs(collection(db, "features"));
+      const grouped = {};
+
+      featureSnap.forEach(doc => {
+        const feature = doc.data();
+        if (feature.role === "admin" && userRole !== "admin" && userRole !== "owner") return;
+        if (!grouped[feature.category]) grouped[feature.category] = [];
+        grouped[feature.category].push(feature);
+      });
+
+      const container = document.getElementById("dashboard-content");
+      container.innerHTML = "";
+
+      const sortedCategories = Object.keys(grouped).sort(cat => cat === "User Utilities" ? -1 : 1);
+
+      sortedCategories.forEach(category => {
+        const catTitle = document.createElement("div");
+        catTitle.className = "category-title";
+        catTitle.textContent = category;
+        container.appendChild(catTitle);
+
+        const grid = document.createElement("div");
+        grid.className = "dashboard-grid";
+
+        grouped[category].forEach(feature => {
+          const a = document.createElement("a");
+          a.href = feature.url || "coming-soon.html";
+          a.className = "dashboard-button";
+          a.innerHTML = `<span class="icon">${feature.icon || '🔹'}</span> ${feature.title}`;
+          grid.appendChild(a);
+        });
+
+        container.appendChild(grid);
+      });
+    }
+
+    window.logout = function () {
+      signOut(auth).then(() => {
+        window.location.href = "login.html";
+      });
+    }
   </script></body>
 </html>

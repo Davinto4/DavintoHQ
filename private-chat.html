@@ -1,91 +1,41 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>DavintoHQ | Private Chat</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f7f7f7;
-    }
-    .container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-    }
-    .chat-header {
-      padding: 10px;
-      background: #6200ea;
-      color: white;
-      font-weight: bold;
-    }
-    .username-selector {
-      display: flex;
-      gap: 10px;
-      padding: 10px;
-      background: #fff;
-    }
-    .chat-messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 15px;
-      background: #f2f2f2;
-    }
-    .message {
-      background: white;
-      padding: 10px;
-      margin-bottom: 10px;
-      border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-    }
-    .own {
-      background: #dcf8c6;
-      align-self: flex-end;
-    }
-    .chat-input {
-      display: flex;
-      padding: 10px;
-      border-top: 1px solid #ccc;
-      background: white;
-    }
-    .chat-input input {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
-    .chat-input button {
-      padding: 10px 15px;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <title>Private Chat - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="container">
-    <div class="chat-header">Private Chat</div>
-    <div class="username-selector">
-      <input type="text" id="targetUsername" placeholder="Enter username to chat with..." />
-      <button id="startChat">Start Chat</button>
+<body class="bg-gray-100 min-h-screen flex">
+  <div id="sidebar"></div>
+
+  <main class="flex-1 flex flex-col p-4">
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🔒 Private Chat</h1>
+
+    <div class="flex items-center gap-2 mb-4">
+      <input id="targetUsername" placeholder="Enter username" class="p-2 border rounded w-1/2" />
+      <button id="startChat" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Start Chat</button>
     </div>
-    <div class="chat-messages" id="chatMessages"></div>
-    <form class="chat-input" id="chatForm">
-      <input type="text" id="chatInput" placeholder="Type your message..." required />
-      <button type="submit">Send</button>
+
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white rounded shadow p-4 mb-4 space-y-2 h-[60vh]"></div>
+
+    <form id="chatForm" class="flex gap-2">
+      <input id="chatInput" type="text" placeholder="Type your message..." required
+        class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
+      <button type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
     </form>
-  </div>  <!-- Firebase SDK -->  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+  </main>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      doc,
-      getDoc,
-      addDoc,
-      onSnapshot,
-      query,
-      orderBy,
-      serverTimestamp,
-      setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, doc, getDoc
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import {
+      getAuth, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -97,84 +47,99 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
-    let currentUser = null;
-    let currentChatId = null;
-    let userDisplayName = "Unnamed";
-
+    const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
-    const chatMessages = document.getElementById("chatMessages");
     const targetInput = document.getElementById("targetUsername");
     const startChatBtn = document.getElementById("startChat");
 
-    async function getUsername(uid) {
-      const userDoc = await getDoc(doc(db, "users", uid));
-      if (userDoc.exists()) {
-        return userDoc.data().username || userDoc.data().displayName || "Unnamed";
+    let currentUser = null;
+    let targetUser = null;
+    let chatId = null;
+
+    const getUsername = async (uid) => {
+      const docRef = doc(db, "users", uid);
+      const snap = await getDoc(docRef);
+      return snap.exists() ? snap.data().username || "Unnamed" : "Unknown";
+    };
+
+    const getUidByUsername = async (username) => {
+      const usernameDoc = await getDoc(doc(db, "usernames", username));
+      if (usernameDoc.exists()) {
+        return usernameDoc.data().uid;
+      } else {
+        alert("User not found");
+        return null;
       }
-      return "Unnamed";
-    }
+    };
 
-    async function getUidFromUsername(username) {
-      const snap = await getDoc(doc(db, "usernames", username));
-      return snap.exists() ? snap.data().uid : null;
-    }
-
-    function getChatId(uid1, uid2) {
+    const getChatId = (uid1, uid2) => {
       return [uid1, uid2].sort().join("_");
-    }
+    };
 
-    function loadMessages(chatId) {
-      const q = query(collection(db, `privateChats/${chatId}/messages`), orderBy("timestamp"));
-      onSnapshot(q, snap => {
-        chatMessages.innerHTML = "";
-        snap.forEach(doc => {
-          const data = doc.data();
+    const loadMessages = () => {
+      const q = query(collection(db, `privateChats/${chatId}/messages`), orderBy("timestamp", "asc"));
+      onSnapshot(q, async (snapshot) => {
+        chatBox.innerHTML = "";
+        for (const docSnap of snapshot.docs) {
+          const msg = docSnap.data();
+          const username = await getUsername(msg.sender);
+          const isMine = msg.sender === currentUser.uid;
           const div = document.createElement("div");
-          div.className = "message";
-          if (data.uid === currentUser.uid) div.classList.add("own");
-          div.innerHTML = `<strong>${data.displayName}:</strong> ${data.text}`;
-          chatMessages.appendChild(div);
-        });
-        chatMessages.scrollTop = chatMessages.scrollHeight;
+          div.className = `p-2 rounded-lg max-w-sm shadow ${
+            isMine ? "bg-blue-100 ml-auto text-right" : "bg-gray-200"
+          }`;
+          div.innerHTML = `
+            <p class="text-sm font-semibold">${username}</p>
+            <p>${msg.text}</p>
+            <p class="text-xs text-gray-500">${new Date(msg.timestamp?.toDate()).toLocaleTimeString()}</p>
+          `;
+          chatBox.appendChild(div);
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
       });
-    }
+    };
 
-    chatForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = chatInput.value.trim();
-      if (!text || !currentChatId || !currentUser) return;
-      await addDoc(collection(db, `privateChats/${currentChatId}/messages`), {
-        uid: currentUser.uid,
-        displayName: userDisplayName,
-        text,
-        timestamp: serverTimestamp()
-      });
-      chatInput.value = "";
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        currentUser = user;
+        console.log("Logged in as", user.uid);
+      } else {
+        alert("You must be signed in.");
+      }
     });
 
     startChatBtn.addEventListener("click", async () => {
       const username = targetInput.value.trim();
-      if (!username || !currentUser) return;
-      const otherUid = await getUidFromUsername(username);
-      if (!otherUid) return alert("User not found");
-      currentChatId = getChatId(currentUser.uid, otherUid);
-      loadMessages(currentChatId);
+      if (!username) return alert("Enter a username to chat with");
+
+      const uid = await getUidByUsername(username);
+      if (!uid || uid === currentUser.uid) return;
+
+      targetUser = uid;
+      chatId = getChatId(currentUser.uid, targetUser);
+      loadMessages();
     });
 
-    onAuthStateChanged(auth, async user => {
-      if (user) {
-        currentUser = user;
-        const docSnap = await getDoc(doc(db, "users", user.uid));
-        if (docSnap.exists()) {
-          userDisplayName = docSnap.data().username || "Unnamed";
-        }
-      } else {
-        await signInAnonymously(auth);
-      }
+    chatForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (!chatId) return alert("Start a chat first");
+      const text = chatInput.value.trim();
+      if (!text) return;
+
+      await addDoc(collection(db, `privateChats/${chatId}/messages`), {
+        text,
+        sender: currentUser.uid,
+        timestamp: serverTimestamp()
+      });
+
+      chatInput.value = "";
     });
-  </script></body>
+
+    import("./sidebar.js").then(m => m.loadSidebar());
+  </script>
+</body>
 </html>

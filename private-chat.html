@@ -10,28 +10,23 @@
   <div id="sidebar"></div>
 
   <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-bold text-green-700 mb-4">🔒 Private Chat</h1>
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🔒 Private Chat</h1>
 
-    <div class="flex gap-2 mb-4">
-      <input id="recipientInput" type="text" placeholder="Enter recipient's username"
-        class="flex-1 p-2 border rounded" />
-      <button id="startChatBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Start Chat</button>
-    </div>
-
-    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4 max-h-[500px]"></div>
+    <div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
 
     <form id="chatForm" class="flex gap-2">
       <input id="chatInput" type="text" placeholder="Type your message..." required
         class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
-      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send</button>
+      <button type="submit"
+        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
     </form>
   </main>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore, collection, doc, setDoc, addDoc, serverTimestamp,
-      query, orderBy, onSnapshot, getDoc
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, doc, getDoc, setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
       getAuth, onAuthStateChanged
@@ -47,92 +42,77 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
+    const db = getFirestore();
+    const auth = getAuth();
 
-    let currentUser = null;
-    let chatId = null;
-
-    const recipientInput = document.getElementById("recipientInput");
-    const startChatBtn = document.getElementById("startChatBtn");
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
 
-    let currentUsername = "Unnamed";
+    let currentUser = null;
+    let chatPartnerId = new URLSearchParams(location.search).get("uid");
 
-    onAuthStateChanged(auth, async user => {
-      if (user) {
+    onAuthStateChanged(auth, async (user) => {
+      if (user && chatPartnerId) {
         currentUser = user;
 
-        // Fetch current user's username
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          currentUsername = userDoc.data().username || "Unnamed";
+        // Make sure both users exist
+        const myUserRef = doc(db, "users", user.uid);
+        const theirUserRef = doc(db, "users", chatPartnerId);
+
+        const mySnap = await getDoc(myUserRef);
+        const theirSnap = await getDoc(theirUserRef);
+
+        if (!mySnap.exists() || !theirSnap.exists()) {
+          alert("User not found.");
+          return;
         }
-      }
-    });
 
-    function generateChatId(uid1, uid2) {
-      return [uid1, uid2].sort().join("_");
-    }
+        const myUsername = mySnap.data().username || "Unnamed";
+        const theirUsername = theirSnap.data().username || "Unnamed";
 
-    startChatBtn.addEventListener("click", async () => {
-      const recipientUsername = recipientInput.value.trim();
-      if (!recipientUsername || !currentUser) return;
+        const chatId = [user.uid, chatPartnerId].sort().join("_");
+        const chatRef = collection(db, "privateChats", chatId, "messages");
 
-      // Find recipient UID
-      const userQuery = query(collection(db, "users"));
-      const snapshot = await getDoc(doc(db, "usernames", recipientUsername));
-      if (!snapshot.exists()) {
-        alert("User not found.");
-        return;
-      }
+        // Real-time listener
+        const q = query(chatRef, orderBy("timestamp", "asc"));
+        onSnapshot(q, async snapshot => {
+          chatBox.innerHTML = "";
+          for (const docSnap of snapshot.docs) {
+            const msg = docSnap.data();
+            const isMine = msg.uid === currentUser.uid;
 
-      const recipientUid = snapshot.data().uid;
-      chatId = generateChatId(currentUser.uid, recipientUid);
-      loadPrivateMessages();
-    });
+            const senderRef = doc(db, "users", msg.uid);
+            const senderSnap = await getDoc(senderRef);
+            const senderName = senderSnap.exists() ? (senderSnap.data().username || "Unnamed") : "Unknown";
 
-    async function loadPrivateMessages() {
-      const q = query(
-        collection(db, "privateChats", chatId, "messages"),
-        orderBy("timestamp", "asc")
-      );
-      onSnapshot(q, snapshot => {
-        chatBox.innerHTML = "";
-        snapshot.forEach(docSnap => {
-          const msg = docSnap.data();
-          const isMine = msg.uid === currentUser.uid;
-
-          const msgDiv = document.createElement("div");
-          msgDiv.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-green-100 self-end ml-auto" : "bg-gray-200"} shadow`;
-          msgDiv.innerHTML = `
-            <p class="font-semibold text-sm">${msg.username || "Unnamed"}</p>
-            <p class="text-sm">${msg.text}</p>
-            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
-          `;
-          chatBox.appendChild(msgDiv);
+            const div = document.createElement("div");
+            div.className = `p-2 rounded-lg max-w-lg ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
+            div.innerHTML = `
+              <p class="text-sm font-semibold">${senderName}</p>
+              <p class="text-sm">${msg.text}</p>
+              <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            `;
+            chatBox.appendChild(div);
+          }
+          chatBox.scrollTop = chatBox.scrollHeight;
         });
-        chatBox.scrollTop = chatBox.scrollHeight;
-      });
-    }
 
-    chatForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (!chatId || !currentUser) return;
+        // Message sender
+        chatForm.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const text = chatInput.value.trim();
+          if (!text) return;
 
-      const text = chatInput.value.trim();
-      if (!text) return;
+          await addDoc(collection(db, "privateChats", chatId, "messages"), {
+            uid: currentUser.uid,
+            text,
+            timestamp: serverTimestamp()
+          });
 
-      await addDoc(collection(db, "privateChats", chatId, "messages"), {
-        uid: currentUser.uid,
-        username: currentUsername,
-        text,
-        timestamp: serverTimestamp()
-      });
-
-      chatInput.value = "";
+          chatInput.value = "";
+        });
+      }
     });
 
     import("./sidebar.js").then(m => m.loadSidebar());

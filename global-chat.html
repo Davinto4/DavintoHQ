@@ -1,92 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Global Chat - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DavintoHQ - Global Chat</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.css" rel="stylesheet">
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f5f5;
-    }
-
-    .chat-container {
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      padding: 1rem;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      margin-bottom: 1rem;
-    }
-
-    .message {
-      background: #eee;
-      padding: 10px;
-      margin: 5px 0;
-      border-radius: 10px;
-      max-width: 70%;
-    }
-
-    .message.you {
-      background: #cceeff;
-      align-self: flex-end;
-    }
-
-    .meta {
-      font-size: 0.8em;
-      color: gray;
-    }
-
-    .input-group {
-      display: flex;
-      gap: 10px;
-    }
-
-    .input-group input {
-      flex: 1;
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    .input-group button {
-      padding: 10px 15px;
-      font-size: 16px;
-    }
-
-    .delete-btn, .edit-btn {
-      font-size: 0.7rem;
-      margin-left: 10px;
-      cursor: pointer;
-      color: red;
-    }
-
-    .typing {
-      font-style: italic;
-      color: green;
-    }
-  </style>
-</head>
-<body>
+</head><body>
   <div class="chat-container">
-    <h2>🌍 Global Chat</h2>
-    <div id="typing-indicator" class="typing"></div>
-    <div id="messages" class="messages"></div>
-    <div class="input-group">
+    <header class="chat-header">
+      <h2>Global Chat</h2>
+    </header>
+    <main id="messages" class="chat-messages"></main>
+    <div class="chat-input-area">
       <input type="text" id="messageInput" placeholder="Type a message...">
-      <button onclick="sendMessage()">Send</button>
+      <button id="sendBtn">Send</button>
     </div>
-  </div>
-
-  <script>
+  </div>  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
@@ -96,122 +27,112 @@
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
       measurementId: "G-3GXFN90T6S"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let currentUser = null;
-    let displayName = "Unnamed";
+    let currentUser;
 
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
         const profileSnap = await db.collection("users").doc(user.uid).get();
-        if (profileSnap.exists) {
-          displayName = profileSnap.data().displayName || "Unnamed";
+        if (!profileSnap.exists || !profileSnap.data().displayName) {
+          const fallbackName = user.displayName || user.email?.split("@")[0] || "User";
+          await db.collection("users").doc(user.uid).set({ displayName: fallbackName }, { merge: true });
         }
-        loadMessages();
+        listenForMessages();
       } else {
-        auth.signInAnonymously();
+        auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
       }
     });
 
-    async function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const text = input.value.trim();
-      if (!text) return;
+    async function getUsername(uid) {
+      try {
+        const doc = await db.collection("users").doc(uid).get();
+        if (doc.exists && doc.data().displayName) {
+          return doc.data().displayName;
+        }
+        return "User";
+      } catch (e) {
+        return "User";
+      }
+    }
 
-      await db.collection("globalChats").add({
-        uid: currentUser.uid,
+    async function listenForMessages() {
+      db.collection("chats").orderBy("timestamp").onSnapshot(async (snapshot) => {
+        const messages = document.getElementById("messages");
+        messages.innerHTML = "";
+        for (const doc of snapshot.docs) {
+          const data = doc.data();
+          const name = await getUsername(data.senderId);
+          const messageDiv = document.createElement("div");
+          messageDiv.className = "message";
+          messageDiv.innerHTML = `<strong>${name}</strong>: ${data.text}`;
+          messages.appendChild(messageDiv);
+        }
+        messages.scrollTop = messages.scrollHeight;
+      });
+    }
+
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+      const text = document.getElementById("messageInput").value.trim();
+      if (!text || !currentUser) return;
+
+      const userSnap = await db.collection("users").doc(currentUser.uid).get();
+      const displayName = userSnap.exists && userSnap.data().displayName ? userSnap.data().displayName : "User";
+
+      await db.collection("chats").add({
+        senderId: currentUser.uid,
         text: text,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      input.value = "";
-    }
-
-    async function getUsername(uid) {
-      const doc = await db.collection("users").doc(uid).get();
-      return doc.exists ? (doc.data().displayName || "Unnamed") : "Unnamed";
-    }
-
-    async function loadMessages() {
-      db.collection("globalChats").orderBy("timestamp", "asc").onSnapshot(async snapshot => {
-        const messagesDiv = document.getElementById("messages");
-        messagesDiv.innerHTML = "";
-
-        const promises = snapshot.docs.map(async doc => {
-          const data = doc.data();
-          const isYou = data.uid === currentUser.uid;
-          const name = await getUsername(data.uid);
-
-          const msgDiv = document.createElement("div");
-          msgDiv.className = "message" + (isYou ? " you" : "");
-          msgDiv.innerHTML = `
-            <strong>${name}:</strong> ${data.text}
-            <div class="meta">${data.timestamp?.toDate().toLocaleString() || ""}</div>
-            ${isYou ? `
-              <span class="edit-btn" onclick="editMessage('${doc.id}', '${data.text}')">✏️</span>
-              <span class="delete-btn" onclick="deleteMessage('${doc.id}')">🗑️</span>
-            ` : ''}
-          `;
-          messagesDiv.appendChild(msgDiv);
-          messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-
-        await Promise.all(promises);
-      });
-    }
-
-    async function deleteMessage(id) {
-      const doc = await db.collection("globalChats").doc(id).get();
-      if (doc.exists && (doc.data().uid === currentUser.uid || currentUser.email === "macdinodavinto@gmail.com")) {
-        await db.collection("globalChats").doc(id).delete();
-      } else {
-        alert("You can't delete this message.");
-      }
-    }
-
-    async function editMessage(id, oldText) {
-      const newText = prompt("Edit message:", oldText);
-      if (newText && newText !== oldText) {
-        const doc = await db.collection("globalChats").doc(id).get();
-        if (doc.exists && doc.data().uid === currentUser.uid) {
-          await db.collection("globalChats").doc(id).update({ text: newText });
-        } else {
-          alert("You can't edit this message.");
-        }
-      }
-    }
-
-    const input = document.getElementById("messageInput");
-    let typingTimeout;
-
-    input.addEventListener("input", () => {
-      db.collection("typing").doc(currentUser.uid).set({
-        name: displayName,
-        typing: true,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      clearTimeout(typingTimeout);
-      typingTimeout = setTimeout(() => {
-        db.collection("typing").doc(currentUser.uid).delete();
-      }, 3000);
+      document.getElementById("messageInput").value = "";
     });
-
-    db.collection("typing").onSnapshot(snapshot => {
-      let typingUsers = [];
-      snapshot.forEach(doc => {
-        if (doc.id !== currentUser.uid) {
-          typingUsers.push(doc.data().name);
-        }
-      });
-      document.getElementById("typing-indicator").innerText = typingUsers.length
-        ? `${typingUsers.join(", ")} is typing...`
-        : "";
-    });
-  </script>
-</body>
-</html>
+  </script>  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+    }
+    .chat-container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      max-width: 600px;
+      margin: auto;
+      border: 1px solid #ccc;
+    }
+    .chat-header {
+      padding: 1em;
+      background: #0077cc;
+      color: #fff;
+      text-align: center;
+    }
+    .chat-messages {
+      flex-grow: 1;
+      padding: 1em;
+      overflow-y: auto;
+      background: #f5f5f5;
+    }
+    .chat-input-area {
+      display: flex;
+      padding: 1em;
+      border-top: 1px solid #ccc;
+    }
+    .chat-input-area input {
+      flex-grow: 1;
+      padding: 0.5em;
+      font-size: 1em;
+    }
+    .chat-input-area button {
+      padding: 0.5em 1em;
+      font-size: 1em;
+      margin-left: 0.5em;
+    }
+    .message {
+      margin-bottom: 0.5em;
+    }
+  </style></body></html>

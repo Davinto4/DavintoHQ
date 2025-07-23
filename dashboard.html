@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ | Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
   <style>
@@ -14,26 +14,36 @@
     .container {
       padding: 20px;
     }
-    .card {
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
     .dashboard-header {
       font-size: 28px;
       font-weight: bold;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
-    .dashboard-section {
+    .category-title {
+      font-size: 18px;
+      margin-top: 40px;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #555;
+    }
+    .dashboard-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
     }
-    iframe {
-      width: 100%;
-      border: none;
+    .dashboard-button {
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      text-decoration: none;
+      color: #333;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .dashboard-button:hover {
+      background: #e8f0fe;
     }
   </style>
 </head>
@@ -41,72 +51,98 @@
   <div class="container">
     <div class="dashboard-header">DavintoHQ Dashboard</div>
 
-    <div class="dashboard-section">
-      <!-- Company Tools -->
-      <div class="card"><h3>File Sharing</h3><iframe src="files.html" height="400"></iframe></div>
-      <div class="card"><h3>Announcements</h3><iframe src="announcements.html" height="400"></iframe></div>
-      <div class="card"><h3>Settings</h3><iframe src="settings.html" height="400"></iframe></div>
-      <div class="card"><h3>Referrals</h3><iframe src="referrals.html" height="400"></iframe></div>
-      <div class="card"><h3>Company Calendar</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Shift Management</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Leave Requests</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Activity Logs</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Issue Tracker</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>HR Desk</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+    <!-- Important Tools -->
+    <div class="category-title">Core Tools</div>
+    <div class="dashboard-grid">
+      <a href="files.html" class="dashboard-button">File Sharing</a>
+      <a href="announcements.html" class="dashboard-button">Announcements</a>
+      <a href="settings.html" class="dashboard-button">Settings</a>
+      <a href="social-feed.html" class="dashboard-button">Social Feed</a>
+      <a href="global-chat.html" class="dashboard-button">Global Chat</a>
+      <a href="user.html" class="dashboard-button">My Profile</a>
+      <a href="search.html" class="dashboard-button">User Search</a>
+      <a href="blog.html" class="dashboard-button">Blog</a>
+    </div>
 
-      <!-- Social Features -->
-      <div class="card"><h3>Social Feed</h3><iframe src="social-feed.html" height="400"></iframe></div>
-      <div class="card"><h3>Global Chat</h3><iframe src="global-chat.html" height="400"></iframe></div>
-      <div class="card"><h3>Groups</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Friends</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Likes & Reactions</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Stories</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Trending</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Feeds Filter</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Mentions</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+    <!-- Company Tools -->
+    <div class="category-title">Company Tools</div>
+    <div class="dashboard-grid">
+      <a href="referrals.html" class="dashboard-button">Referrals</a>
+      <a href="coming-soon.html" class="dashboard-button">Shift Management</a>
+      <a href="coming-soon.html" class="dashboard-button">Leave Requests</a>
+      <a href="coming-soon.html" class="dashboard-button">HR Desk</a>
+      <a href="coming-soon.html" class="dashboard-button">Company Calendar</a>
+      <a href="coming-soon.html" class="dashboard-button">Activity Logs</a>
+      <a href="coming-soon.html" class="dashboard-button">Tasks</a>
+      <a href="coming-soon.html" class="dashboard-button">Support</a>
+      <a href="coming-soon.html" class="dashboard-button">Issue Tracker</a>
+      <a href="coming-soon.html" class="dashboard-button">FAQ</a>
+    </div>
 
-      <!-- Blog & Profile -->
-      <div class="card"><h3>Blog</h3><iframe src="blog.html" height="400"></iframe></div>
-      <div class="card"><h3>My Profile</h3><iframe src="user.html" height="400"></iframe></div>
+    <!-- Social Features -->
+    <div class="category-title">Social Features</div>
+    <div class="dashboard-grid">
+      <a href="coming-soon.html" class="dashboard-button">Groups</a>
+      <a href="coming-soon.html" class="dashboard-button">Friends</a>
+      <a href="coming-soon.html" class="dashboard-button">Mentions</a>
+      <a href="coming-soon.html" class="dashboard-button">Trending</a>
+      <a href="coming-soon.html" class="dashboard-button">Feeds Filter</a>
+      <a href="coming-soon.html" class="dashboard-button">Likes & Reactions</a>
+      <a href="coming-soon.html" class="dashboard-button">Stories</a>
+      <a href="coming-soon.html" class="dashboard-button">Followers</a>
+      <a href="coming-soon.html" class="dashboard-button">Comments</a>
+      <a href="coming-soon.html" class="dashboard-button">Share Posts</a>
+    </div>
 
-      <!-- Learning & Resources -->
-      <div class="card"><h3>Courses</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Documentation</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Tips</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Web Tools</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Developer Docs</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Video Tutorials</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Guides</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>API Access</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Changelog</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Roadmap</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+    <!-- Learning & Resources -->
+    <div class="category-title">Learning & Resources</div>
+    <div class="dashboard-grid">
+      <a href="coming-soon.html" class="dashboard-button">Courses</a>
+      <a href="coming-soon.html" class="dashboard-button">Documentation</a>
+      <a href="coming-soon.html" class="dashboard-button">Tips</a>
+      <a href="coming-soon.html" class="dashboard-button">Web Tools</a>
+      <a href="coming-soon.html" class="dashboard-button">Video Tutorials</a>
+      <a href="coming-soon.html" class="dashboard-button">Guides</a>
+      <a href="coming-soon.html" class="dashboard-button">Developer Docs</a>
+      <a href="coming-soon.html" class="dashboard-button">API Access</a>
+      <a href="coming-soon.html" class="dashboard-button">Changelog</a>
+      <a href="coming-soon.html" class="dashboard-button">Roadmap</a>
+    </div>
 
-      <!-- Books & Novels -->
-      <div class="card"><h3>Write a Book</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Read Books</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>My Library</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Genres</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Authors</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Reading List</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Bookmarks</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Quotes</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Community Reviews</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Publishing Tools</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+    <!-- Books & Novels -->
+    <div class="category-title">Books & Novels</div>
+    <div class="dashboard-grid">
+      <a href="coming-soon.html" class="dashboard-button">Write a Book</a>
+      <a href="coming-soon.html" class="dashboard-button">Read Books</a>
+      <a href="coming-soon.html" class="dashboard-button">My Library</a>
+      <a href="coming-soon.html" class="dashboard-button">Genres</a>
+      <a href="coming-soon.html" class="dashboard-button">Authors</a>
+      <a href="coming-soon.html" class="dashboard-button">Bookmarks</a>
+      <a href="coming-soon.html" class="dashboard-button">Reading List</a>
+      <a href="coming-soon.html" class="dashboard-button">Quotes</a>
+      <a href="coming-soon.html" class="dashboard-button">Community Reviews</a>
+      <a href="coming-soon.html" class="dashboard-button">Publishing Tools</a>
+    </div>
 
-      <!-- User Utilities -->
-      <div class="card"><h3>User Search</h3><iframe src="search.html" height="400"></iframe></div>
-      <div class="card"><h3>Notifications</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Tasks</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Calendar</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Support</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>FAQ</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Feedback</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Security</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Account Settings</h3><iframe src="coming-soon.html" height="400"></iframe></div>
-      <div class="card"><h3>Theme</h3><iframe src="coming-soon.html" height="400"></iframe></div>
+    <!-- User Utilities -->
+    <div class="category-title">User Utilities</div>
+    <div class="dashboard-grid">
+      <a href="coming-soon.html" class="dashboard-button">Notifications</a>
+      <a href="coming-soon.html" class="dashboard-button">Calendar</a>
+      <a href="coming-soon.html" class="dashboard-button">Feedback</a>
+      <a href="coming-soon.html" class="dashboard-button">Theme</a>
+      <a href="coming-soon.html" class="dashboard-button">Security</a>
+      <a href="coming-soon.html" class="dashboard-button">Account Settings</a>
+      <a href="coming-soon.html" class="dashboard-button">Language</a>
+      <a href="coming-soon.html" class="dashboard-button">Dark Mode</a>
+      <a href="coming-soon.html" class="dashboard-button">Privacy Settings</a>
+      <a href="coming-soon.html" class="dashboard-button">Logout</a>
+    </div>
 
-      <!-- Admin Access -->
-      <div class="card"><h3>Admin Panel</h3><iframe src="admin.html" height="400"></iframe></div>
+    <!-- Admin Section -->
+    <div class="category-title">Admin Access</div>
+    <div class="dashboard-grid">
+      <a href="admin.html" class="dashboard-button">Admin Panel</a>
     </div>
   </div>
 </body>

@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DavintoHQ | Calendar</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+</head><body>
+  <div class="container">
+    <div class="dashboard-header">
+      <div class="header-left">
+        <h1 class="logo">DavintoHQ Calendar</h1>
+      </div>
+      <div class="header-right">
+        <button class="theme-toggle" onclick="toggleTheme()">
+          <i class="fas fa-adjust"></i>
+        </button>
+        <button class="logout-button" onclick="logout()">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </div><div class="calendar-section">
+  <h2 class="section-title">My Calendar</h2>
+  <form id="event-form">
+    <input type="text" id="event-title" placeholder="Event Title" required />
+    <input type="datetime-local" id="event-datetime" required />
+    <button type="submit"><i class="fas fa-plus"></i> Add Event</button>
+  </form>
+  <ul id="event-list"></ul>
+</div>
+
+  </div>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut,
+      signInAnonymously
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      deleteDoc,
+      doc,
+      onSnapshot
+    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const eventForm = document.getElementById("event-form");
+    const eventTitle = document.getElementById("event-title");
+    const eventDatetime = document.getElementById("event-datetime");
+    const eventList = document.getElementById("event-list");
+
+    let userId = null;
+
+    onAuthStateChanged(auth, async (user) => {
+      if (user) {
+        userId = user.uid;
+        const eventsRef = collection(db, "users", userId, "events");
+
+        onSnapshot(eventsRef, (snapshot) => {
+          eventList.innerHTML = "";
+          snapshot.forEach(doc => {
+            const event = doc.data();
+            const li = document.createElement("li");
+            const date = new Date(event.datetime).toLocaleString();
+            li.innerHTML = `
+              <span><strong>${event.title}</strong> - ${date}</span>
+              <button onclick="deleteEvent('${doc.id}')"><i class='fas fa-trash'></i></button>
+            `;
+            eventList.appendChild(li);
+          });
+        });
+      } else {
+        signInAnonymously(auth);
+      }
+    });
+
+    eventForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = eventTitle.value.trim();
+      const datetime = eventDatetime.value;
+      if (title && datetime && userId) {
+        await addDoc(collection(db, "users", userId, "events"), { title, datetime });
+        eventTitle.value = "";
+        eventDatetime.value = "";
+      }
+    });
+
+    window.deleteEvent = async (eventId) => {
+      if (userId) {
+        await deleteDoc(doc(db, "users", userId, "events", eventId));
+      }
+    };
+
+    window.logout = function () {
+      signOut(auth).then(() => {
+        location.href = "index.html";
+      });
+    }
+
+    window.toggleTheme = function () {
+      document.body.classList.toggle("dark-theme");
+    }
+  </script></body></html>

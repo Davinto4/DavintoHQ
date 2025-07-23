@@ -3,34 +3,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat - DavintoHQ</title>
-  <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://kit.fontawesome.com/a2c1f1f79b.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body class="bg-gray-100 text-gray-900 flex min-h-screen font-sans">
+<body class="bg-gray-100 flex min-h-screen">
   <div id="sidebar"></div>  <main class="flex-1 flex flex-col p-4">
-    <h1 class="text-2xl font-semibold text-primary mb-4">🌍 Global Chat</h1><div id="typingIndicator" class="text-sm text-gray-500 mb-2 hidden">Someone is typing...</div>
+    <h1 class="text-2xl font-bold text-blue-700 mb-4">🌍 Global Chat</h1><div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow rounded p-4 space-y-2 mb-4"></div>
 
-<div id="chatBox" class="flex-1 overflow-y-auto bg-white shadow-md rounded-lg p-4 space-y-3 mb-4 h-[65vh]"></div>
-
-<form id="chatForm" class="flex items-center gap-2 mt-auto">
-  <input id="chatInput" type="text" placeholder="Type your message..." class="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" />
+<form id="chatForm" class="flex gap-2 items-center">
+  <input id="chatInput" type="text" placeholder="Type your message..." required class="flex-1 p-2 border rounded focus:outline-none focus:ring" />
   <input type="file" id="mediaInput" accept="image/*,video/*" class="hidden" />
-  <button type="button" id="mediaBtn" class="bg-gray-300 hover:bg-gray-400 px-3 py-2 rounded-md">📎</button>
-  <button type="submit" class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition">Send</button>
+  <button type="button" onclick="document.getElementById('mediaInput').click()" class="text-blue-500"><i class="fas fa-paperclip"></i></button>
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
 </form>
 
   </main>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import {
-      getFirestore, collection, addDoc, serverTimestamp, onSnapshot,
-      query, orderBy, doc, getDoc, deleteDoc, updateDoc, setDoc
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-    import {
-      getStorage, ref as storageRef, uploadBytes, getDownloadURL
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-    import {
-      getAuth, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -42,121 +34,63 @@
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const auth = getAuth(app);
-    const storage = getStorage(app);
+    const db = getFirestore();
+    const auth = getAuth();
+    const storage = getStorage();
 
     const chatBox = document.getElementById("chatBox");
     const chatForm = document.getElementById("chatForm");
     const chatInput = document.getElementById("chatInput");
     const mediaInput = document.getElementById("mediaInput");
-    const mediaBtn = document.getElementById("mediaBtn");
-    const typingIndicator = document.getElementById("typingIndicator");
 
     let currentUser = null;
-    let currentUsername = "Anonymous";
-    let isAdmin = false;
 
-    const TYPING_DOC = doc(db, "status", "globalTyping");
-
-    chatInput.addEventListener("input", async () => {
-      await setDoc(TYPING_DOC, {
-        typing: true,
-        by: currentUsername,
-        timestamp: Date.now()
-      });
-    });
-
-    mediaBtn.addEventListener("click", () => mediaInput.click());
-
-    let selectedMediaFile = null;
-    mediaInput.addEventListener("change", e => {
-      selectedMediaFile = e.target.files[0];
-    });
-
-    const showTyping = () => {
-      onSnapshot(TYPING_DOC, snap => {
-        const data = snap.data();
-        if (!data || Date.now() - data.timestamp > 3000) {
-          typingIndicator.classList.add("hidden");
-        } else if (data.typing && data.by !== currentUsername) {
-          typingIndicator.textContent = `${data.by} is typing...`;
-          typingIndicator.classList.remove("hidden");
-        }
-      });
-    };
-
-    onAuthStateChanged(auth, async (user) => {
+    onAuthStateChanged(auth, user => {
       if (user) {
         currentUser = user;
-        const userRef = doc(db, "users", user.uid);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists()) {
-          currentUsername = userSnap.data().username || "Anonymous";
-          const role = userSnap.data().role || "user";
-          isAdmin = role === "admin" || role === "owner";
-        }
-
         loadMessages();
-        showTyping();
-      } else {
-        window.location.href = "login.html";
       }
     });
 
     const loadMessages = () => {
-      const q = query(collection(db, "chats"), orderBy("timestamp", "asc"));
+      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
       onSnapshot(q, snapshot => {
         chatBox.innerHTML = "";
         snapshot.forEach(docSnap => {
           const msg = docSnap.data();
-          const isMine = msg.senderId === currentUser?.uid;
-          const div = document.createElement("div");
+          const isMine = msg.uid === currentUser?.uid;
 
-          div.className = `relative group p-3 rounded-xl max-w-lg shadow-sm ${
-            isMine ? "bg-primary-light ml-auto" : "bg-gray-200"
-          }`;
+          const div = document.createElement("div");
+          div.className = `group p-2 rounded-lg max-w-xl relative ${isMine ? "bg-blue-100 ml-auto" : "bg-gray-200"}`;
+
+          let mediaHTML = "";
+          if (msg.mediaURL) {
+            if (msg.mediaType.startsWith("image")) {
+              mediaHTML = `<img src="${msg.mediaURL}" class="max-w-xs rounded" />`;
+            } else if (msg.mediaType.startsWith("video")) {
+              mediaHTML = `<video controls class="max-w-xs"><source src="${msg.mediaURL}" /></video>`;
+            }
+          }
+
+          const reactions = msg.reactions ? Object.entries(msg.reactions).map(([emoji, users]) => `<span class="px-1">${emoji} ${users.length}</span>`).join(" ") : "";
 
           div.innerHTML = `
-            <div class="flex justify-between items-center mb-1">
-              <span class="font-medium text-sm text-primary">${msg.username || "Anonymous"}</span>
-              <span class="text-xs text-gray-500">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
+            <div class="flex justify-between items-center">
+              <span class="font-semibold">${msg.username || "Unknown"}</span>
+              ${isMine || currentUser?.email === 'macdinodavinto@gmail.com' ? `<button onclick="deleteMessage('${docSnap.id}')" class="text-red-500 text-xs hidden group-hover:inline">Delete</button>` : ""}
             </div>
+            ${msg.replyTo ? `<div class="text-xs italic text-gray-500">Replying to: ${msg.replyToText}</div>` : ""}
+            ${mediaHTML}
             <p class="text-sm">${msg.text || ""}</p>
-            ${msg.mediaURL ? (msg.mediaURL.includes("video") ? `<video controls class='w-full mt-2 rounded-md'><source src='${msg.mediaURL}' type='video/mp4'></video>` : `<img src='${msg.mediaURL}' class='mt-2 rounded-md max-w-full' />`) : ""}
-            <div class="absolute top-1 right-1 hidden group-hover:flex gap-2">
-              ${
-                isMine
-                  ? `<button class="edit-btn text-blue-500 text-xs hover:underline">Edit</button>
-                     <button class="delete-btn text-red-500 text-xs hover:underline">Delete</button>`
-                  : isAdmin
-                  ? `<button class="delete-btn text-red-500 text-xs hover:underline">Delete</button>
-                     <button class="report-btn text-yellow-600 text-xs hover:underline">Report</button>`
-                  : ""
-              }
-              <button class="pin-btn text-green-600 text-xs hover:underline">${msg.pinned ? "Unpin" : "⭐ Pin"}</button>
+            <div class="flex justify-between text-xs text-gray-600">
+              <span>${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
+              <span>${reactions}</span>
+            </div>
+            <div class="flex space-x-2 mt-1">
+              <button onclick="react('${docSnap.id}', '❤️')" class="text-xs">❤️</button>
+              <button onclick="replyTo('${docSnap.id}', '${msg.text}')" class="text-xs">💬</button>
             </div>
           `;
-
-          div.querySelector(".edit-btn")?.addEventListener("click", async () => {
-            const newText = prompt("Edit message:", msg.text);
-            if (newText && newText !== msg.text) {
-              await updateDoc(doc(db, "chats", docSnap.id), { text: newText });
-            }
-          });
-
-          div.querySelector(".delete-btn")?.addEventListener("click", async () => {
-            if (confirm("Delete this message?")) {
-              await deleteDoc(doc(db, "chats", docSnap.id));
-            }
-          });
-
-          div.querySelector(".report-btn")?.addEventListener("click", () => alert("Reported."));
-
-          div.querySelector(".pin-btn")?.addEventListener("click", async () => {
-            await updateDoc(doc(db, "chats", docSnap.id), { pinned: !msg.pinned });
-          });
 
           chatBox.appendChild(div);
         });
@@ -167,30 +101,52 @@
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = chatInput.value.trim();
-      if (!text && !selectedMediaFile) return;
+      if (!text && !mediaInput.files.length) return;
 
       let mediaURL = null;
-      if (selectedMediaFile) {
-        const fileRef = storageRef(storage, `chats/${Date.now()}_${selectedMediaFile.name}`);
-        await uploadBytes(fileRef, selectedMediaFile);
-        mediaURL = await getDownloadURL(fileRef);
+      let mediaType = null;
+
+      if (mediaInput.files.length) {
+        const file = mediaInput.files[0];
+        const storageRef = ref(storage, `globalChats/${Date.now()}_${file.name}`);
+        await uploadBytes(storageRef, file);
+        mediaURL = await getDownloadURL(storageRef);
+        mediaType = file.type;
       }
 
-      await addDoc(collection(db, "chats"), {
-        senderId: currentUser.uid,
-        username: currentUsername,
+      await addDoc(collection(db, "globalChats"), {
+        uid: currentUser.uid,
+        username: currentUser.displayName || "Anonymous",
         text,
         mediaURL,
-        pinned: false,
+        mediaType,
         timestamp: serverTimestamp()
       });
 
-      await setDoc(TYPING_DOC, { typing: false, by: currentUsername });
-
       chatInput.value = "";
       mediaInput.value = "";
-      selectedMediaFile = null;
     });
+
+    window.react = async (msgId, emoji) => {
+      const docRef = doc(db, "globalChats", msgId);
+      const snap = await docRef.get();
+      const data = snap.data();
+      const reactions = data.reactions || {};
+      if (!reactions[emoji]) reactions[emoji] = [];
+      if (!reactions[emoji].includes(currentUser.uid)) reactions[emoji].push(currentUser.uid);
+      await updateDoc(docRef, { reactions });
+    };
+
+    window.replyTo = (msgId, text) => {
+      chatInput.value = `@reply(${msgId}) ${text}`;
+      chatInput.focus();
+    };
+
+    window.deleteMessage = async (msgId) => {
+      if (confirm("Delete this message?")) {
+        await deleteDoc(doc(db, "globalChats", msgId));
+      }
+    };
 
     import("./sidebar.js").then(m => m.loadSidebar());
   </script></body>

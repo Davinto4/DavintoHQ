@@ -8,32 +8,25 @@
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js"></script>
   <link rel="stylesheet" href="style.css" />
   <style>
-    .chat-bubble {
-      max-width: 80%;
-      padding: 0.5rem;
-      border-radius: 1rem;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-      display: inline-block;
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+    }
+    .message-box {
+      max-width: 70%;
       word-wrap: break-word;
     }
-    .chat-meta {
-      font-size: 0.75rem;
-      color: gray;
-      margin-top: 0.25rem;
-      display: flex;
-      justify-content: space-between;
-    }
     .reaction-btn {
-      font-size: 0.9rem;
-      margin-right: 4px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
     }
-    .message-controls button {
-      margin-right: 0.3rem;
-      font-size: 0.75rem;
+    .reaction-btn:hover {
+      transform: scale(1.1);
     }
   </style>
 </head>
-<body class="flex flex-col h-screen bg-gray-100">
+<body class="flex flex-col h-screen">
   <div class="p-4 bg-white shadow-md">
     <h1 class="text-xl font-bold">🌐 Global Chat</h1>
   </div>  <div id="chatArea" class="flex-1 overflow-y-auto px-4 py-2 flex flex-col space-y-2"></div>  <div class="p-4 bg-white shadow-inner sticky bottom-0">
@@ -77,8 +70,6 @@
     const chatArea = document.getElementById("chatArea");
 
     let currentUser;
-    let replyContext = null;
-
     onAuthStateChanged(auth, async (user) => {
       if (!user) return;
       currentUser = user;
@@ -99,10 +90,9 @@
         text,
         timestamp: serverTimestamp(),
         reactions: {},
-        replyTo: replyContext
+        replyTo: null
       });
       messageInput.value = "";
-      replyContext = null;
     }
 
     sendBtn.addEventListener("click", sendMessage);
@@ -124,32 +114,26 @@
           const isMine = msg.uid === currentUser?.uid;
 
           const div = document.createElement("div");
-          div.className = `${isMine ? "self-end text-right" : "self-start text-left"}`;
-
-          const bubble = document.createElement("div");
-          bubble.className = `chat-bubble ${isMine ? "bg-green-100" : "bg-white"}`;
+          div.className = `p-3 rounded-xl message-box ${isMine ? "bg-green-200 self-end ml-auto" : "bg-white"} shadow-sm border`;
 
           const reactionsHTML = ['👍','❤️','😂'].map(r => {
             const count = msg.reactions?.[r]?.length || 0;
             return `<button class='reaction-btn' onclick="react('${id}', '${r}')">${r} ${count}</button>`;
           }).join(' ');
 
-          bubble.innerHTML = `
-            <div class="text-xs font-semibold">${senderName}</div>
-            ${msg.replyTo ? `<div class="italic text-gray-500 text-xs mb-1">Replying to: ${msg.replyTo}</div>` : ''}
-            <div class="text-sm">${msg.text}</div>
-            <div class="chat-meta">
-              <span>${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</span>
-            </div>
-            <div class="flex gap-1 mt-1">${reactionsHTML}</div>
-            <div class="message-controls mt-1">
+          div.innerHTML = `
+            <p class="text-sm font-semibold">${senderName}</p>
+            ${msg.replyTo ? `<p class="text-xs italic text-gray-500">Replying to ${msg.replyTo}</p>` : ''}
+            <p class="text-sm">${msg.text}</p>
+            <div class="flex gap-2 text-xs mt-1">${reactionsHTML}</div>
+            <p class="text-xs text-gray-400 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
+            <div class="flex gap-3 mt-1 text-xs">
               <button onclick="replyMessage('${id}', '${msg.text}')">Reply</button>
-              ${isMine ? `<button onclick="editMessage('${id}', \`${msg.text}\`)" >Edit</button><button onclick="deleteMessage('${id}')">Delete</button>` : ''}
+              ${isMine ? `<button onclick="editMessage('${id}', '${msg.text}')">Edit</button><button onclick="deleteMessage('${id}')">Delete</button>` : ''}
               ${currentUser.email === "macdinodavinto@gmail.com" ? `<button onclick="deleteMessage('${id}')">Admin Delete</button>` : ''}
             </div>
           `;
 
-          div.appendChild(bubble);
           chatArea.appendChild(div);
         }
         chatArea.scrollTop = chatArea.scrollHeight;
@@ -179,8 +163,7 @@
     }
 
     window.replyMessage = function (id, originalText) {
-      replyContext = originalText;
-      messageInput.placeholder = `Replying to: ${originalText}`;
+      messageInput.value = `@reply:${id} `;
       messageInput.focus();
     }
   </script></body>

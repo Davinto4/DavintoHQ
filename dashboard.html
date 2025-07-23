@@ -4,7 +4,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ | Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
@@ -12,8 +12,17 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg-color);
+      color: var(--text-color);
+      transition: background 0.3s, color 0.3s;
+    }
+    :root {
+      --bg-color: #f4f6f9;
+      --text-color: #333;
+    }
+    .dark-theme {
+      --bg-color: #1e1e1e;
+      --text-color: #f4f4f4;
     }
     .container {
       padding: 20px;
@@ -27,22 +36,17 @@
       align-items: center;
     }
     .username {
-      color: var(--text);
       font-size: 16px;
       font-weight: normal;
-      margin-right: 10px;
     }
     .logout-button, .theme-toggle {
       padding: 5px 10px;
-      margin-left: 5px;
-      background: #ff4b5c;
+      margin-left: 10px;
+      background: #4b7bec;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-    }
-    .theme-toggle {
-      background: #333;
     }
     .dashboard-grid {
       display: grid;
@@ -63,22 +67,21 @@
       gap: 10px;
       align-items: center;
     }
+    .dark-theme .dashboard-button {
+      background: #2a2a2a;
+      color: #f4f4f4;
+    }
     .dashboard-button:hover {
       background: #e8f0fe;
+    }
+    .dark-theme .dashboard-button:hover {
+      background: #3a3a3a;
     }
     .category-title {
       font-size: 20px;
       margin-top: 30px;
       margin-bottom: 10px;
       font-weight: bold;
-    }
-    :root {
-      --bg: #f4f6f9;
-      --text: #000;
-    }
-    body.dark {
-      --bg: #121212;
-      --text: #fff;
     }
   </style>
 </head>
@@ -88,7 +91,7 @@
       <div>DavintoHQ Dashboard</div>
       <div>
         <span id="username" class="username">Welcome</span>
-        <button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
+        <button class="theme-toggle" onclick="toggleTheme()">Theme</button>
         <button class="logout-button" onclick="logout()">Logout</button>
       </div>
     </div>
@@ -124,86 +127,38 @@
     const featureSections = document.getElementById("feature-sections");
     const usernameEl = document.getElementById("username");
 
-    const themeToggle = () => {
-      document.body.classList.toggle("dark");
-    };
-    window.toggleTheme = themeToggle;
-
-    const FEATURES = {
-      "Company Tools": [
-        { title: "Referrals", icon: "fa-user-plus", url: "referrals.html" },
-        { title: "File Sharing", icon: "fa-folder-open", url: "files.html" },
-        { title: "Announcements", icon: "fa-bullhorn", url: "announcements.html" },
-        { title: "Settings", icon: "fa-gear", url: "settings.html" },
-        { title: "Reports", icon: "fa-chart-line", url: "reports.html" },
-        { title: "Attendance", icon: "fa-calendar-check", url: "attendance.html" },
-        { title: "Schedules", icon: "fa-clock", url: "schedules.html" },
-        { title: "Finance", icon: "fa-coins", url: "finance.html" },
-        { title: "HR Tools", icon: "fa-people-group", url: "hr-tools.html" },
-        { title: "Goals", icon: "fa-bullseye", url: "goals.html" }
-      ],
-      "Social Features": [
-        { title: "Global Chat", icon: "fa-comments", url: "global-chat.html" },
-        { title: "Social Feed", icon: "fa-rss", url: "social-feed.html" },
-        { title: "Blog", icon: "fa-blog", url: "blog.html" },
-        { title: "Groups", icon: "fa-users", url: "groups.html" },
-        { title: "My Profile", icon: "fa-user", url: "user.html" },
-        { title: "Wall", icon: "fa-th-large", url: "wall.html" },
-        { title: "Reactions", icon: "fa-heart", url: "reactions.html" },
-        { title: "Stories", icon: "fa-camera", url: "stories.html" },
-        { title: "Events", icon: "fa-calendar", url: "events.html" },
-        { title: "Polls", icon: "fa-poll", url: "polls.html" }
-      ],
-      "Learning & Resources": [
-        { title: "Courses", icon: "fa-graduation-cap", url: "courses.html" },
-        { title: "Documentation", icon: "fa-file-alt", url: "documentation.html" },
-        { title: "Tips", icon: "fa-lightbulb", url: "tips.html" },
-        { title: "Books & Novels", icon: "fa-book", url: "books.html" },
-        { title: "Write a Book", icon: "fa-pen", url: "write-book.html" },
-        { title: "Read Books", icon: "fa-book-open", url: "read-books.html" },
-        { title: "My Library", icon: "fa-library", url: "my-library.html" },
-        { title: "Tutorials", icon: "fa-chalkboard-teacher", url: "tutorials.html" },
-        { title: "Quizzes", icon: "fa-question-circle", url: "quizzes.html" },
-        { title: "Certifications", icon: "fa-certificate", url: "certifications.html" }
-      ],
-      "Web Tools": [
-        { title: "Short Links", icon: "fa-link", url: "short-links.html" },
-        { title: "QR Generator", icon: "fa-qrcode", url: "qr.html" },
-        { title: "Notes", icon: "fa-sticky-note", url: "notes.html" },
-        { title: "Clipboard", icon: "fa-paste", url: "clipboard.html" },
-        { title: "Image Editor", icon: "fa-image", url: "image-editor.html" },
-        { title: "Video Tools", icon: "fa-video", url: "video-tools.html" },
-        { title: "Audio Tools", icon: "fa-music", url: "audio-tools.html" },
-        { title: "Converters", icon: "fa-exchange-alt", url: "converter.html" },
-        { title: "Upload Hub", icon: "fa-upload", url: "upload.html" },
-        { title: "Web Apps", icon: "fa-globe", url: "web-apps.html" }
-      ],
-      "User Utilities": [
-        { title: "User Search", icon: "fa-search", url: "search.html" },
-        { title: "Notifications", icon: "fa-bell", url: "notifications.html" },
-        { title: "Tasks", icon: "fa-tasks", url: "tasks.html" },
-        { title: "Calendar", icon: "fa-calendar-days", url: "calendar.html" },
-        { title: "Support", icon: "fa-headset", url: "support.html" },
-        { title: "Profile Settings", icon: "fa-user-cog", url: "profile-settings.html" },
-        { title: "Account Info", icon: "fa-id-badge", url: "account.html" },
-        { title: "Preferences", icon: "fa-sliders-h", url: "preferences.html" },
-        { title: "Feedback", icon: "fa-comment-dots", url: "feedback.html" },
-        { title: "Contact", icon: "fa-envelope", url: "contact.html" }
-      ],
-      "Admin Access": [
-        { title: "Admin Panel", icon: "fa-shield-alt", url: "admin.html" }
-      ]
-    };
-
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         const tokenResult = await user.getIdTokenResult();
         const role = tokenResult.claims.role || "user";
-
         usernameEl.textContent = `Welcome ${user.isAnonymous ? 'Guest' : (user.displayName || 'User')}`;
 
-        for (const category in FEATURES) {
-          if (category === 'Admin Access' && !(role === 'admin' || role === 'owner')) continue;
+        const q = query(collection(db, "features"));
+        const querySnapshot = await getDocs(q);
+        const categories = {};
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          if (data.role === "admin" && role !== "admin" && role !== "owner") return;
+
+          if (!categories[data.category]) {
+            categories[data.category] = [];
+          }
+          categories[data.category].push(data);
+        });
+
+        const preferredOrder = [
+          "User Utilities",
+          "Company Tools",
+          "Social Features",
+          "Learning & Resources",
+          "Novel Zone",
+          "Web Tools",
+          "Admin Access"
+        ];
+
+        preferredOrder.forEach(category => {
+          if (!categories[category]) return;
 
           const sectionTitle = document.createElement("div");
           sectionTitle.className = "category-title";
@@ -213,16 +168,16 @@
           const grid = document.createElement("div");
           grid.className = "dashboard-grid";
 
-          FEATURES[category].forEach((feature) => {
+          categories[category].forEach(feature => {
             const link = document.createElement("a");
             link.href = feature.url;
             link.className = "dashboard-button";
-            link.innerHTML = `<i class="fa ${feature.icon}"></i> <span>${feature.title}</span>`;
+            link.innerHTML = `<i class="${feature.icon || 'fa fa-link'}"></i> <span>${feature.title}</span>`;
             grid.appendChild(link);
           });
 
           featureSections.appendChild(grid);
-        }
+        });
       } else {
         signInAnonymously(auth);
       }
@@ -230,8 +185,12 @@
 
     window.logout = function () {
       signOut(auth).then(() => {
-        location.reload();
+        location.href = "index.html";
       });
+    }
+
+    window.toggleTheme = function () {
+      document.body.classList.toggle("dark-theme");
     }
   </script></body>
 </html>

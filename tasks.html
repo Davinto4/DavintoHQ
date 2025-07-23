@@ -25,6 +25,11 @@
   <h2 class="section-title">My Tasks</h2>
   <form id="task-form">
     <input type="text" id="task-input" placeholder="Enter new task..." required />
+    <select id="task-priority">
+      <option value="low">Low</option>
+      <option value="medium">Medium</option>
+      <option value="high">High</option>
+    </select>
     <button type="submit"><i class="fas fa-plus"></i></button>
   </form>
   <ul id="task-list"></ul>
@@ -42,6 +47,7 @@
       getFirestore,
       collection,
       addDoc,
+      updateDoc,
       getDocs,
       deleteDoc,
       doc,
@@ -63,6 +69,7 @@
 
     const taskForm = document.getElementById("task-form");
     const taskInput = document.getElementById("task-input");
+    const taskPriority = document.getElementById("task-priority");
     const taskList = document.getElementById("task-list");
 
     let userId = null;
@@ -74,12 +81,14 @@
 
         onSnapshot(tasksRef, (snapshot) => {
           taskList.innerHTML = "";
-          snapshot.forEach(doc => {
-            const task = doc.data();
+          snapshot.forEach(docSnap => {
+            const task = docSnap.data();
             const li = document.createElement("li");
             li.innerHTML = `
-              <span>${task.text}</span>
-              <button onclick="deleteTask('${doc.id}')"><i class='fas fa-trash'></i></button>
+              <input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleComplete('${docSnap.id}', this.checked)" />
+              <span contenteditable="true" onblur="editTask('${docSnap.id}', this.innerText)">${task.text}</span>
+              <small class="priority">Priority: ${task.priority}</small>
+              <button onclick="deleteTask('${docSnap.id}')"><i class='fas fa-trash'></i></button>
             `;
             taskList.appendChild(li);
           });
@@ -92,8 +101,13 @@
     taskForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const text = taskInput.value.trim();
+      const priority = taskPriority.value;
       if (text && userId) {
-        await addDoc(collection(db, "users", userId, "tasks"), { text });
+        await addDoc(collection(db, "users", userId, "tasks"), {
+          text,
+          priority,
+          completed: false
+        });
         taskInput.value = "";
       }
     });
@@ -101,6 +115,18 @@
     window.deleteTask = async (taskId) => {
       if (userId) {
         await deleteDoc(doc(db, "users", userId, "tasks", taskId));
+      }
+    };
+
+    window.editTask = async (taskId, newText) => {
+      if (userId) {
+        await updateDoc(doc(db, "users", userId, "tasks", taskId), { text: newText });
+      }
+    };
+
+    window.toggleComplete = async (taskId, isCompleted) => {
+      if (userId) {
+        await updateDoc(doc(db, "users", userId, "tasks", taskId), { completed: isCompleted });
       }
     };
 

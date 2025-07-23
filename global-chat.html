@@ -1,52 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
+<!-- Updated global-chat.html with edit/delete, admin controls, and typing indicator --><!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Global Chat | DavintoHQ</title>
-  <script type="module" src="./sidebar.js"></script>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Chat</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .message-card { background-color: #e0efff; border-radius: 10px; padding: 10px; margin: 10px; }
+    .message-meta { font-size: 12px; color: gray; display: flex; justify-content: space-between; }
+    .message-controls { font-size: 11px; text-align: right; cursor: pointer; color: red; }
+    .typing-indicator { font-style: italic; color: #666; padding: 5px 15px; }
+  </style>
 </head>
-<body class="bg-gray-100">
-  <div class="flex min-h-screen">
-    
-    <!-- Sidebar will load dynamically -->
-    <div id="sidebar"></div>
-
-    <main class="flex-1 p-4">
-      <h1 class="text-2xl font-bold mb-4">🌍 Global Chat</h1>
-
-      <div class="flex flex-col h-[80vh] bg-white rounded-xl shadow-lg p-4">
-        <!-- Chat messages -->
-        <div id="chatBox" class="flex-1 overflow-y-auto space-y-2 mb-4 p-2 border rounded"></div>
-
-        <!-- Chat input -->
-        <form id="chatForm" class="flex gap-2">
-          <input
-            id="chatInput"
-            type="text"
-            class="flex-1 border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Type your message..."
-          />
-          <button
-            type="submit"
-            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
-          >
-            Send
-          </button>
-        </form>
-      </div>
-    </main>
-  </div>
-
-  <script type="module">
+<body>
+  <div id="chat-container"></div>
+  <div class="typing-indicator" id="typing-indicator" style="display: none;">Someone is typing...</div>
+  <div style="padding: 10px; display: flex; gap: 10px">
+    <input id="messageInput" type="text" placeholder="Type your message..." style="flex: 1; padding: 10px;" />
+    <button id="sendBtn">Send</button>
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import {
-      getFirestore, collection, addDoc, serverTimestamp, onSnapshot,
-      query, orderBy, doc, getDoc
+      getFirestore, collection, addDoc, serverTimestamp,
+      onSnapshot, query, orderBy, deleteDoc, doc, updateDoc, setDoc
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import {
-      getAuth, onAuthStateChanged
+      getAuth, onAuthStateChanged, signInAnonymously
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
@@ -55,99 +33,103 @@
       projectId: "davintohq",
       storageBucket: "davintohq.appspot.com",
       messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535",
+      measurementId: "G-3GXFN90T6S"
     };
 
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore();
-    const auth = getAuth();
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
-    const chatBox = document.getElementById("chatBox");
-    const chatForm = document.getElementById("chatForm");
-    const chatInput = document.getElementById("chatInput");
-
-    let currentUser = null;
-    let currentUsername = null;
-    const userCache = {};
+    let currentUser;
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        if (userDoc.exists()) {
-          currentUsername = userDoc.data().username || "Unnamed";
-          userCache[user.uid] = currentUsername;
-          loadMessages();
-        } else {
-          alert("Username not found in your profile. Please set your profile first.");
-          chatForm.querySelector("button").disabled = true;
-        }
+        const userDoc = await (await getDoc(doc(db, "users", user.uid))).data();
+        currentUser.displayName = userDoc?.username || "Anonymous";
+        setupChat();
       } else {
-        alert("Please login to use global chat.");
+        await signInAnonymously(auth);
       }
     });
 
-    const loadMessages = () => {
-      const q = query(collection(db, "globalChats"), orderBy("timestamp", "asc"));
-      onSnapshot(q, async (snapshot) => {
-        chatBox.innerHTML = "";
+    async function setupChat() {
+      const chatContainer = document.getElementById("chat-container");
+      const input = document.getElementById("messageInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const typingIndicator = document.getElementById("typing-indicator");
 
-        for (const docSnap of snapshot.docs) {
+      const messagesRef = collection(db, "chats");
+
+      // Typing indicator logic
+      let typingRef = doc(db, "typing", currentUser.uid);
+
+      input.addEventListener("input", () => {
+        setDoc(typingRef, { username: currentUser.displayName, typing: input.value.length > 0 });
+      });
+
+      onSnapshot(collection(db, "typing"), (snap) => {
+        let typingUsers = snap.docs.filter(d => d.id !== currentUser.uid && d.data().typing);
+        typingIndicator.style.display = typingUsers.length ? 'block' : 'none';
+      });
+
+      sendBtn.onclick = async () => {
+        if (input.value.trim()) {
+          await addDoc(messagesRef, {
+            text: input.value.trim(),
+            uid: currentUser.uid,
+            username: currentUser.displayName,
+            timestamp: serverTimestamp()
+          });
+          input.value = "";
+          setDoc(typingRef, { typing: false });
+        }
+      };
+
+      const q = query(messagesRef, orderBy("timestamp"));
+      onSnapshot(q, (snapshot) => {
+        chatContainer.innerHTML = "";
+        snapshot.forEach(docSnap => {
           const msg = docSnap.data();
-          const isMine = msg.uid === currentUser?.uid;
+          const card = document.createElement("div");
+          card.className = "message-card";
 
-          let senderName = msg.username;
-          if (!senderName) {
-            if (userCache[msg.uid]) {
-              senderName = userCache[msg.uid];
-            } else {
-              try {
-                const userDoc = await getDoc(doc(db, "users", msg.uid));
-                if (userDoc.exists()) {
-                  senderName = userDoc.data().username || "Unknown";
-                  userCache[msg.uid] = senderName;
-                } else {
-                  senderName = "Unknown";
-                }
-              } catch {
-                senderName = "Unknown";
-              }
-            }
+          const meta = document.createElement("div");
+          meta.className = "message-meta";
+          meta.innerHTML = `<strong>${msg.username || "Anonymous"}</strong><span>${new Date(msg.timestamp?.toDate()).toLocaleTimeString()}</span>`;
+
+          const text = document.createElement("div");
+          text.textContent = msg.text;
+
+          const controls = document.createElement("div");
+          controls.className = "message-controls";
+
+          if (currentUser.uid === msg.uid) {
+            controls.innerHTML = `
+              <span onclick="editMessage('${docSnap.id}', '${msg.text}')">✏️ Edit</span> |
+              <span onclick="deleteMessage('${docSnap.id}')">🗑️ Delete</span>
+            `;
+          } else if (currentUser.email === 'macdinodavinto@gmail.com') {
+            controls.innerHTML = `<span onclick="deleteMessage('${docSnap.id}')">🗑️ Admin Delete</span>`;
           }
 
-          const div = document.createElement("div");
-          div.className = `p-2 rounded-lg max-w-xs ${isMine ? "bg-blue-100 self-end ml-auto" : "bg-gray-200"} shadow`;
-
-          div.innerHTML = `
-            <p class="text-xs font-semibold text-gray-700">${senderName}</p>
-            <p class="text-sm">${msg.text}</p>
-            <p class="text-xs text-gray-500 text-right">${new Date(msg.timestamp?.toDate?.()).toLocaleTimeString()}</p>
-          `;
-
-          chatBox.appendChild(div);
-        }
-
-        chatBox.scrollTop = chatBox.scrollHeight;
+          card.append(meta, text, controls);
+          chatContainer.appendChild(card);
+        });
+        chatContainer.scrollTop = chatContainer.scrollHeight;
       });
+    }
+
+    window.deleteMessage = async function (id) {
+      await deleteDoc(doc(db, "chats", id));
     };
 
-    chatForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = chatInput.value.trim();
-      if (!text || !currentUser || !currentUsername) return;
-
-      await addDoc(collection(db, "globalChats"), {
-        uid: currentUser.uid,
-        username: currentUsername,
-        text,
-        timestamp: serverTimestamp()
-      });
-
-      chatInput.value = "";
-    });
-
-    // Load sidebar
-    import("./sidebar.js").then(m => m.loadSidebar());
-  </script>
-</body>
+    window.editMessage = async function (id, oldText) {
+      const newText = prompt("Edit your message:", oldText);
+      if (newText && newText !== oldText) {
+        await updateDoc(doc(db, "chats", id), { text: newText });
+      }
+    };
+  </script></body>
 </html>

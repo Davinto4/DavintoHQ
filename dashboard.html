@@ -1,90 +1,112 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css"/>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
+
 <body>
   <div class="dashboard-container">
     <div class="dashboard-header">
       <h1 class="logo">DavintoHQ Dashboard</h1>
-      <button class="theme-toggle" onclick="toggleTheme()">
-        <i class="fas fa-adjust"></i>
-      </button>
-      <button class="logout-button" onclick="logout()">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </button>
+      <div class="header-actions">
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+          <i class="fas fa-adjust"></i>
+        </button>
+        <button class="logout-button" onclick="logout()" title="Logout">
+          <i class="fas fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
     </div>
 
     <div class="dashboard-sections">
 
-      <!-- User Utilities -->
-      <div class="section-card" onclick="goTo('user-utilities.html')">
-        <i class="fas fa-user-cog"></i>
-        <h2>User Utilities</h2>
-      </div>
+      <!-- USER UTILITIES -->
+      <button class="section-card" onclick="location.href='user-search.html'">
+        <i class="fas fa-users"></i> User Search
+      </button>
+      <button class="section-card" onclick="location.href='notifications.html'">
+        <i class="fas fa-bell"></i> Notifications
+      </button>
+      <button class="section-card" onclick="location.href='tasks.html'">
+        <i class="fas fa-tasks"></i> Tasks
+      </button>
+      <button class="section-card" onclick="location.href='calendar.html'">
+        <i class="fas fa-calendar"></i> Calendar
+      </button>
+      <button class="section-card" onclick="location.href='support.html'">
+        <i class="fas fa-life-ring"></i> Support
+      </button>
+      <button class="section-card" onclick="location.href='profile.html'">
+        <i class="fas fa-user"></i> My Profile
+      </button>
 
-      <!-- Communication -->
-      <div class="section-card" onclick="goTo('communication.html')">
-        <i class="fas fa-comments"></i>
-        <h2>Communication</h2>
-      </div>
+      <!-- COMMUNICATION -->
+      <button class="section-card" onclick="location.href='global-chat.html'">
+        <i class="fas fa-comments"></i> Global Chat
+      </button>
+      <button class="section-card" onclick="location.href='announcements.html'">
+        <i class="fas fa-bullhorn"></i> Announcements
+      </button>
 
-      <!-- Reports & Analytics -->
-      <div class="section-card" onclick="goTo('reports.html')">
-        <i class="fas fa-chart-bar"></i>
-        <h2>Reports & Analytics</h2>
-      </div>
+      <!-- FILE & REFERRALS -->
+      <button class="section-card" onclick="location.href='referrals.html'">
+        <i class="fas fa-share-alt"></i> Referrals
+      </button>
+      <button class="section-card" onclick="location.href='files.html'">
+        <i class="fas fa-folder-open"></i> File Sharing
+      </button>
 
-      <!-- Blog & Media -->
-      <div class="section-card" onclick="goTo('blog.html')">
-        <i class="fas fa-blog"></i>
-        <h2>Blog & Media</h2>
-      </div>
+      <!-- BLOG & SOCIAL -->
+      <button class="section-card" onclick="location.href='social-feed.html'">
+        <i class="fas fa-rss"></i> Social Feed
+      </button>
+      <button class="section-card" onclick="location.href='blog.html'">
+        <i class="fas fa-blog"></i> Blog
+      </button>
+      <button class="section-card" onclick="location.href='groups.html'">
+        <i class="fas fa-users-cog"></i> Groups
+      </button>
 
-      <!-- Novels -->
-      <div class="section-card" onclick="goTo('novels.html')">
-        <i class="fas fa-book-open"></i>
-        <h2>Novels</h2>
-      </div>
+      <!-- WRITING & READING NOVELS -->
+      <button class="section-card" onclick="location.href='write-novel.html'">
+        <i class="fas fa-pen-fancy"></i> Write a Novel
+      </button>
+      <button class="section-card" onclick="location.href='read-novels.html'">
+        <i class="fas fa-book-reader"></i> Read Novels
+      </button>
+      <button class="section-card" onclick="location.href='my-library.html'">
+        <i class="fas fa-book"></i> My Library
+      </button>
 
-      <!-- Learning & Resources -->
-      <div class="section-card" onclick="goTo('learning.html')">
-        <i class="fas fa-graduation-cap"></i>
-        <h2>Learning & Resources</h2>
-      </div>
+      <!-- LEARNING & RESOURCES -->
+      <button class="section-card" onclick="location.href='courses.html'">
+        <i class="fas fa-chalkboard-teacher"></i> Courses
+      </button>
+      <button class="section-card" onclick="location.href='documentation.html'">
+        <i class="fas fa-file-alt"></i> Documentation
+      </button>
+      <button class="section-card" onclick="location.href='tips.html'">
+        <i class="fas fa-lightbulb"></i> Tips
+      </button>
+      <button class="section-card" onclick="location.href='web-tools.html'">
+        <i class="fas fa-tools"></i> Web Tools
+      </button>
 
-      <!-- Events & Calendar -->
-      <div class="section-card" onclick="goTo('calendar.html')">
-        <i class="fas fa-calendar-alt"></i>
-        <h2>Events & Calendar</h2>
-      </div>
+      <!-- SETTINGS -->
+      <button class="section-card" onclick="location.href='settings.html'">
+        <i class="fas fa-cogs"></i> Settings
+      </button>
 
-      <!-- File Sharing -->
-      <div class="section-card" onclick="goTo('files.html')">
-        <i class="fas fa-folder-open"></i>
-        <h2>File Sharing</h2>
-      </div>
-
-      <!-- Referrals -->
-      <div class="section-card" onclick="goTo('referrals.html')">
-        <i class="fas fa-user-friends"></i>
-        <h2>Referrals</h2>
-      </div>
-
-      <!-- Settings & Customization -->
-      <div class="section-card" onclick="goTo('settings.html')">
-        <i class="fas fa-cogs"></i>
-        <h2>Settings & Customization</h2>
-      </div>
-
-      <!-- Admin Access -->
-      <div class="section-card" onclick="goTo('admin.html')">
-        <i class="fas fa-user-shield"></i>
-        <h2>Admin Access</h2>
+      <!-- ADMIN ACCESS (conditionally shown) -->
+      <div id="admin-section" style="display: none;">
+        <button class="section-card" onclick="location.href='admin.html'">
+          <i class="fas fa-shield-alt"></i> Admin Panel
+        </button>
       </div>
     </div>
   </div>
@@ -98,9 +120,14 @@
       window.location.href = "index.html";
     }
 
-    function goTo(page) {
-      window.location.href = page;
-    }
+    // Show admin section if user is admin
+    document.addEventListener("DOMContentLoaded", () => {
+      const userRole = localStorage.getItem("userRole");
+      if (userRole === "admin" || userRole === "owner") {
+        document.getElementById("admin-section").style.display = "block";
+      }
+    });
   </script>
 </body>
+
 </html>

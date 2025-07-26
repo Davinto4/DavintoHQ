@@ -1,0 +1,28 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Utilities - DavintoHQ</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+</head><body>
+  <header>
+    <h1>User Utilities</h1>
+    <button onclick="goBack()">⬅ Back to Dashboard</button>
+  </header>  <main>
+    <section class="utility-section">
+      <h2>Welcome to User Utilities</h2>
+      <p>Here you'll find tools and pages tailored for individual users.</p><div class="utility-buttons">
+    <button onclick="location.href='profile.html'">View/Edit Profile</button>
+    <button onclick="location.href='tasks.html'">Your Tasks</button>
+    <button onclick="location.href='notifications.html'">Notifications</button>
+    <button onclick="location.href='settings.html'">Account Settings</button>
+    <button onclick="location.href='calendar.html'">Calendar</button>
+    <button onclick="location.href='files.html'">Your Files</button>
+  </div>
+</section>
+
+  </main>  <script>
+    function goBack() {
+      window.location.href = "dashboard.html";
+    }
+  </script></body></html>

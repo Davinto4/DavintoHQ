@@ -3,90 +3,65 @@
 <head>
   <meta charset="UTF-8" />
   <title>My Profile - DavintoHQ</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f4f6f8;
+      background: #f0f2f5;
       margin: 0;
       padding: 2rem;
-      color: #333;
     }
-
-    .profile-container {
-      max-width: 600px;
+    .profile-box {
       background: #fff;
       padding: 2rem;
-      border-radius: 15px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      max-width: 500px;
       margin: auto;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    h2 {
       text-align: center;
-    }
-
-    h1 {
-      font-size: 2rem;
+      margin-bottom: 2rem;
       color: #333;
-      margin-bottom: 1rem;
     }
-
-    .welcome {
+    .item {
+      margin-bottom: 1.2rem;
       font-size: 1rem;
-      margin-bottom: 1.5rem;
-      color: #777;
     }
-
-    .profile-image {
-      width: 100px;
-      height: 100px;
-      background: #ccc;
-      border-radius: 50%;
-      margin: auto;
-      margin-bottom: 1rem;
-    }
-
-    .info-group {
-      text-align: left;
-      margin-bottom: 1rem;
-    }
-
-    .info-label {
+    .label {
       font-weight: bold;
-      display: inline-block;
-      width: 100px;
-    }
-
-    .info-value {
       color: #444;
     }
-
-    .role-badge {
-      background: #2196F3;
-      color: #fff;
-      padding: 4px 10px;
-      border-radius: 5px;
-      font-size: 0.85rem;
-      display: inline-block;
-      margin-top: 5px;
+    .value {
+      margin-left: 8px;
+      color: #111;
     }
-
     .logout-btn {
+      display: block;
+      width: 100%;
       margin-top: 2rem;
-      padding: 10px 25px;
-      background: #e53935;
-      color: white;
+      padding: 12px;
+      background: #d32f2f;
+      color: #fff;
       border: none;
-      border-radius: 5px;
       font-size: 1rem;
+      border-radius: 6px;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
-
     .logout-btn:hover {
-      background: #c62828;
+      background: #b71c1c;
     }
   </style>
+
   <script>
+    // Firebase config for DavintoHQ
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
@@ -95,26 +70,32 @@
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
+
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
     const db = firebase.firestore();
 
     auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        window.location.href = "index.html";
+        window.location.href = "index.html"; // redirect if not signed in
         return;
       }
 
       document.getElementById("email").textContent = user.email;
 
-      const doc = await db.collection("users").doc(user.uid).get();
-      if (doc.exists) {
-        const data = doc.data();
-        document.getElementById("username").textContent = data.username || "N/A";
-        document.getElementById("phone").textContent = data.phone || "N/A";
-        document.getElementById("role").textContent = data.role || "user";
-      } else {
-        alert("User data not found.");
+      try {
+        const doc = await db.collection("users").doc(user.uid).get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("username").textContent = data.username || "N/A";
+          document.getElementById("phone").textContent = data.phone || "N/A";
+          document.getElementById("role").textContent = data.role || "user";
+        } else {
+          alert("User data not found in Firestore.");
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        alert("Failed to load profile.");
       }
     });
 
@@ -126,18 +107,13 @@
   </script>
 </head>
 <body>
-  <div class="profile-container">
-    <h1>Hello, Davinto 👋</h1>
-    <div class="welcome">Welcome to your profile on DavintoHQ!</div>
+  <div class="profile-box">
+    <h2>My Profile</h2>
 
-    <div class="profile-image"></div>
-
-    <div class="info-group">
-      <div><span class="info-label">Username:</span> <span id="username" class="info-value">Loading...</span></div>
-      <div><span class="info-label">Email:</span> <span id="email" class="info-value">Loading...</span></div>
-      <div><span class="info-label">Phone:</span> <span id="phone" class="info-value">Loading...</span></div>
-      <div><span class="info-label">Role:</span> <span class="role-badge" id="role">Loading...</span></div>
-    </div>
+    <div class="item"><span class="label">Username:</span><span class="value" id="username">Loading...</span></div>
+    <div class="item"><span class="label">Email:</span><span class="value" id="email">Loading...</span></div>
+    <div class="item"><span class="label">Phone:</span><span class="value" id="phone">Loading...</span></div>
+    <div class="item"><span class="label">Role:</span><span class="value" id="role">Loading...</span></div>
 
     <button class="logout-btn" onclick="logout()">Logout</button>
   </div>

@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>My Profile</title>
@@ -9,89 +8,41 @@
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #f3f3f3;
+      background: #f0f2f5;
       padding: 2rem;
     }
     .profile-box {
-      background: white;
-      max-width: 600px;
-      margin: auto;
+      background: #fff;
       padding: 2rem;
       border-radius: 10px;
+      max-width: 500px;
+      margin: auto;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
     h2 {
       text-align: center;
+      margin-bottom: 1rem;
     }
-    .field-group {
-      margin-bottom: 1.5rem;
+    .item {
+      margin-bottom: 1rem;
     }
-    label {
+    .label {
       font-weight: bold;
+    }
+    .value {
+      margin-left: 10px;
+    }
+    .logout-btn {
       display: block;
-      margin-bottom: 5px;
-    }
-    input {
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-      border-radius: 5px;
-      border: 1px solid #ccc;
-    }
-    .readonly {
-      background-color: #eee;
-    }
-    button {
+      margin: 2rem auto 0;
       padding: 10px 20px;
-      background-color: #007bff;
-      color: white;
+      background: #d32f2f;
+      color: #fff;
       border: none;
-      border-radius: 6px;
+      border-radius: 5px;
       cursor: pointer;
-      font-size: 16px;
-    }
-    .btn-red {
-      background-color: #d32f2f;
-      margin-top: 10px;
     }
   </style>
-</head>
-<body>
-  <div class="profile-box">
-    <h2>My Profile</h2>
-    
-    <div class="field-group">
-      <label for="username">Username</label>
-      <input type="text" id="usernameInput" />
-    </div>
-
-    <div class="field-group">
-      <label for="email">Email</label>
-      <input type="text" id="emailInput" class="readonly" readonly />
-    </div>
-
-    <div class="field-group">
-      <label for="phone">Phone Number</label>
-      <input type="text" id="phoneInput" />
-    </div>
-
-    <div class="field-group">
-      <label for="role">Role</label>
-      <input type="text" id="roleInput" class="readonly" readonly />
-    </div>
-
-    <button onclick="saveChanges()">Save Changes</button>
-
-    <h3 style="margin-top: 2rem;">Change Password</h3>
-    <div class="field-group">
-      <label for="newPassword">New Password</label>
-      <input type="password" id="newPassword" placeholder="Enter new password" />
-    </div>
-    <button onclick="changePassword()">Change Password</button>
-
-    <button class="btn-red" onclick="logout()">Logout</button>
-  </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -101,69 +52,44 @@
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
-
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-    const db = firebase.firestore();
+    const db = firebase.firestore();auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    window.location.href = "index.html";
+    return;
+  }
 
-    let currentUID = null;
+  document.getElementById("email").textContent = user.email;
 
-    auth.onAuthStateChanged(async user => {
-      if (!user) {
-        location.href = 'index.html';
-        return;
-      }
-      currentUID = user.uid;
-      document.getElementById("emailInput").value = user.email;
+  const doc = await db.collection("users").doc(user.uid).get();
+  if (doc.exists) {
+    const data = doc.data();
+    document.getElementById("username").textContent = data.username || "N/A";
+    document.getElementById("phone").textContent = data.phone || "N/A";
+    document.getElementById("role").textContent = data.role || "user";
+  } else {
+    alert("User data not found.");
+  }
+});
 
-      const userDoc = await db.collection("users").doc(user.uid).get();
-      if (userDoc.exists) {
-        const data = userDoc.data();
-        document.getElementById("usernameInput").value = data.username || '';
-        document.getElementById("phoneInput").value = data.phone || '';
-        document.getElementById("roleInput").value = data.role || 'user';
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "index.html";
+  });
+}
 
-        // Only owner/admin can edit role
-        if (["admin", "owner"].includes(data.role)) {
-          document.getElementById("roleInput").classList.remove("readonly");
-          document.getElementById("roleInput").removeAttribute("readonly");
-        }
-      }
-    });
-
-    function saveChanges() {
-      const username = document.getElementById("usernameInput").value.trim();
-      const phone = document.getElementById("phoneInput").value.trim();
-      const role = document.getElementById("roleInput").value.trim();
-
-      if (!currentUID) return;
-
-      db.collection("users").doc(currentUID).update({
-        username,
-        phone,
-        role
-      }).then(() => {
-        alert("Profile updated successfully.");
-      }).catch(err => {
-        alert("Error updating profile: " + err.message);
-      });
-    }
-
-    function changePassword() {
-      const newPassword = document.getElementById("newPassword").value;
-      if (newPassword.length < 6) return alert("Password must be at least 6 characters.");
-
-      auth.currentUser.updatePassword(newPassword).then(() => {
-        alert("Password updated.");
-        document.getElementById("newPassword").value = '';
-      }).catch(error => {
-        alert("Error: " + error.message);
-      });
-    }
-
-    function logout() {
-      auth.signOut().then(() => location.href = 'index.html');
-    }
   </script>
+</head>
+<body>
+  <div class="profile-box">
+    <h2>My Profile</h2><div class="item"><span class="label">Username:</span><span class="value" id="username">Loading...</span></div>
+<div class="item"><span class="label">Email:</span><span class="value" id="email">Loading...</span></div>
+<div class="item"><span class="label">Phone:</span><span class="value" id="phone">Loading...</span></div>
+<div class="item"><span class="label">Role:</span><span class="value" id="role">Loading...</span></div>
+
+<button class="logout-btn" onclick="logout()">Logout</button>
+
+  </div>
 </body>
 </html>

@@ -1,124 +1,165 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DavintoHQ Dashboard</title>
+  <link rel="stylesheet" href="style.css" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
   <style>
-    .dashboard-sections {
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #333;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header button {
+      background: #555;
+      color: white;
+      border: none;
+      padding: 0.5rem 1rem;
+      margin-left: 0.5rem;
+      cursor: pointer;
+    }
+
+    .welcome-box {
+      background: #f0f0f0;
+      padding: 2rem;
+      margin: 1rem;
+      border-radius: 8px;
+    }
+
+    .section-container {
       display: flex;
       flex-direction: column;
-      align-items: flex-start;
+      align-items: stretch;
+      gap: 1rem;
       padding: 1rem;
     }
-    .section-button {
+
+    .section-btn {
       width: 100%;
-      max-width: 600px;
-      margin: 0.5rem 0;
-      padding: 1rem;
-      font-size: 1.2rem;
+      padding: 1.2rem;
+      font-size: 1.1rem;
       background-color: #007bff;
       color: white;
       border: none;
-      border-radius: 8px;
-      text-align: left;
+      border-radius: 10px;
       cursor: pointer;
-      transition: background-color 0.3s ease;
+      text-align: left;
     }
-    .section-button:hover {
+
+    .section-btn:hover {
       background-color: #0056b3;
     }
-    .section-button i {
-      margin-right: 10px;
+
+    .admin-only {
+      display: none;
+      background-color: #dc3545;
+    }
+
+    body.dark-theme {
+      background-color: #111;
+      color: white;
+    }
+
+    body.dark-theme .welcome-box {
+      background-color: #222;
+    }
+
+    body.dark-theme .section-btn {
+      background-color: #444;
+    }
+
+    body.dark-theme .section-btn:hover {
+      background-color: #666;
+    }
+
+    body.dark-theme .admin-only {
+      background-color: #b02a37;
     }
   </style>
-</head><body>
-  <div class="dashboard-container">
-    <div class="dashboard-header">
-      <h1 class="logo">DavintoHQ Dashboard</h1>
-      <button class="theme-toggle" onclick="toggleTheme()">
-        <i class="fas fa-adjust"></i>
-      </button>
-      <button class="logout-button" onclick="logout()">
-        <i class="fas fa-sign-out-alt"></i> Logout
-      </button>
-    </div><div class="dashboard-sections">
-  <button class="section-button" onclick="location.href='user-search.html'">
-    <i class="fas fa-user"></i> User Utilities
-  </button>
-  <button class="section-button" onclick="location.href='notifications.html'">
-    <i class="fas fa-bell"></i> Notifications
-  </button>
-  <button class="section-button" onclick="location.href='tasks.html'">
-    <i class="fas fa-tasks"></i> Tasks
-  </button>
-  <button class="section-button" onclick="location.href='calendar.html'">
-    <i class="fas fa-calendar"></i> Calendar
-  </button>
+</head>
+<body>
+  <header>
+    <h1>DavintoHQ Dashboard</h1>
+    <div>
+      <button onclick="logout()">Logout</button>
+      <button id="theme-toggle">🌙</button>
+    </div>
+  </header>
 
-  <button class="section-button" onclick="location.href='referrals.html'">
-    <i class="fas fa-share-alt"></i> Referrals
-  </button>
-  <button class="section-button" onclick="location.href='file-sharing.html'">
-    <i class="fas fa-file-upload"></i> File Sharing
-  </button>
-  <button class="section-button" onclick="location.href='announcements.html'">
-    <i class="fas fa-bullhorn"></i> Announcements
-  </button>
-  <button class="section-button" onclick="location.href='settings.html'">
-    <i class="fas fa-cog"></i> Settings
-  </button>
-  <button class="section-button" onclick="location.href='global-chat.html'">
-    <i class="fas fa-comments"></i> Global Chat
-  </button>
-  <button class="section-button" onclick="location.href='social-feed.html'">
-    <i class="fas fa-rss"></i> Social Feed
-  </button>
+  <main>
+    <section class="welcome-box">
+      <h2>👋 Hello there, welcome to DavintoHQ!</h2>
+      <p>This platform is designed to empower team collaboration, streamline operations, and support your creativity.</p>
+      <p><strong>About Davinto:</strong> DavintoHQ is created by <strong>macdinodavinto@gmail.com</strong>, aimed at combining company tools, social features, and creative spaces into one powerful web platform.</p>
+    </section>
 
-  <button class="section-button" onclick="location.href='blog.html'">
-    <i class="fas fa-blog"></i> Blog
-  </button>
-  <button class="section-button" onclick="location.href='groups.html'">
-    <i class="fas fa-users"></i> Groups
-  </button>
+    <div class="section-container">
+      <button class="section-btn" onclick="location.href='user-utilities.html'">User Utilities</button>
+      <button class="section-btn" onclick="location.href='company-tools.html'">Company Tools</button>
+      <button class="section-btn" onclick="location.href='social-features.html'">Social Features</button>
+      <button class="section-btn" onclick="location.href='novel-zone.html'">Novel Zone</button>
+      <button class="section-btn" onclick="location.href='learning-resources.html'">Learning & Resources</button>
+      <button class="section-btn" onclick="location.href='web-tools.html'">Web Tools</button>
+      <button class="section-btn admin-only" onclick="location.href='admin-panel.html'">Admin Access</button>
+    </div>
+  </main>
 
-  <button class="section-button" onclick="location.href='courses.html'">
-    <i class="fas fa-graduation-cap"></i> Courses
-  </button>
-  <button class="section-button" onclick="location.href='documentation.html'">
-    <i class="fas fa-book"></i> Documentation
-  </button>
-  <button class="section-button" onclick="location.href='tips.html'">
-    <i class="fas fa-lightbulb"></i> Tips
-  </button>
-
-  <button class="section-button" onclick="location.href='write-book.html'">
-    <i class="fas fa-pen-nib"></i> Write a Novel
-  </button>
-  <button class="section-button" onclick="location.href='read-books.html'">
-    <i class="fas fa-book-reader"></i> Read Novels
-  </button>
-  <button class="section-button" onclick="location.href='my-library.html'">
-    <i class="fas fa-book-open"></i> My Library
-  </button>
-
-  <button class="section-button" onclick="location.href='admin-panel.html'" id="admin-access" style="display:none">
-    <i class="fas fa-tools"></i> Admin Access
-  </button>
-</div>
-
-  </div>  <script>
-    function toggleTheme() {
+  <script>
+    const themeToggle = document.getElementById("theme-toggle");
+    themeToggle.addEventListener("click", () => {
       document.body.classList.toggle("dark-theme");
-    }
+    });
 
     function logout() {
-      window.location.href = 'index.html';
+      firebase.auth().signOut().then(() => {
+        location.href = "index.html";
+      });
     }
 
-    // Admin visibility logic (placeholder logic, adjust based on auth system)
-    const userRole = localStorage.getItem("userRole");
-    if (userRole === "admin" || userRole === "owner") {
-      document.getElementById("admin-access").style.display = "block";
-    }
-  </script></body></html>
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        const email = user.email || "";
+        const adminSection = document.querySelector(".admin-only");
+        if (email === "macdinodavinto@gmail.com") {
+          adminSection.style.display = 'block';
+        } else {
+          firebase.firestore().collection("users").doc(user.uid).get().then(doc => {
+            const role = doc.data()?.role;
+            if (role === "admin" || role === "owner") {
+              adminSection.style.display = 'block';
+            }
+          });
+        }
+      } else {
+        location.href = "index.html";
+      }
+    });
+  </script>
+</body>
+</html>

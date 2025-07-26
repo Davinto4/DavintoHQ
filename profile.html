@@ -4,11 +4,66 @@
   <meta charset="UTF-8" />
   <title>My Profile - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+
+  <!-- Firebase SDK (Modular) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
+      authDomain: "davintohq.firebaseapp.com",
+      projectId: "davintohq",
+      storageBucket: "davintohq.appspot.com",
+      messagingSenderId: "156992522736",
+      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // When the page loads
+    window.addEventListener('DOMContentLoaded', () => {
+      const usernameEl = document.getElementById("username");
+      const emailEl = document.getElementById("email");
+      const phoneEl = document.getElementById("phone");
+      const roleEl = document.getElementById("role");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+          window.location.href = "index.html"; // Redirect if not logged in
+          return;
+        }
+
+        emailEl.textContent = user.email || "No Email";
+
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            usernameEl.textContent = data.username || "N/A";
+            phoneEl.textContent = data.phone || "N/A";
+            roleEl.textContent = data.role || "user";
+          } else {
+            alert("User data not found.");
+          }
+        } catch (error) {
+          console.error("Error fetching user document:", error);
+          alert("Failed to load user profile.");
+        }
+      });
+
+      logoutBtn.addEventListener("click", () => {
+        signOut(auth).then(() => {
+          window.location.href = "index.html";
+        });
+      });
+    });
+  </script>
 
   <style>
     body {
@@ -59,63 +114,17 @@
       background: #b71c1c;
     }
   </style>
-
-  <script>
-    // Firebase config for DavintoHQ
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-
-    auth.onAuthStateChanged(async (user) => {
-      if (!user) {
-        window.location.href = "index.html"; // redirect if not signed in
-        return;
-      }
-
-      document.getElementById("email").textContent = user.email;
-
-      try {
-        const doc = await db.collection("users").doc(user.uid).get();
-        if (doc.exists) {
-          const data = doc.data();
-          document.getElementById("username").textContent = data.username || "N/A";
-          document.getElementById("phone").textContent = data.phone || "N/A";
-          document.getElementById("role").textContent = data.role || "user";
-        } else {
-          alert("User data not found in Firestore.");
-        }
-      } catch (error) {
-        console.error("Error fetching user data:", error);
-        alert("Failed to load profile.");
-      }
-    });
-
-    function logout() {
-      auth.signOut().then(() => {
-        window.location.href = "index.html";
-      });
-    }
-  </script>
 </head>
+
 <body>
   <div class="profile-box">
     <h2>My Profile</h2>
-
     <div class="item"><span class="label">Username:</span><span class="value" id="username">Loading...</span></div>
     <div class="item"><span class="label">Email:</span><span class="value" id="email">Loading...</span></div>
     <div class="item"><span class="label">Phone:</span><span class="value" id="phone">Loading...</span></div>
     <div class="item"><span class="label">Role:</span><span class="value" id="role">Loading...</span></div>
 
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <button class="logout-btn" id="logoutBtn">Logout</button>
   </div>
 </body>
 </html>

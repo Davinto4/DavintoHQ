@@ -1,10 +1,13 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-</head><body>
+  <link rel="stylesheet" href="styles.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+</head>
+<body>
   <div class="dashboard-container">
     <div class="dashboard-header">
       <h1 class="logo">DavintoHQ Dashboard</h1>
@@ -14,43 +17,90 @@
       <button class="logout-button" onclick="logout()">
         <i class="fas fa-sign-out-alt"></i> Logout
       </button>
-    </div><div class="dashboard-sections">
-  <div class="section-card">
-    <h2>User Utilities</h2>
+    </div>
+
+    <div class="dashboard-sections">
+
+      <!-- User Utilities -->
+      <div class="section-card" onclick="goTo('user-utilities.html')">
+        <i class="fas fa-user-cog"></i>
+        <h2>User Utilities</h2>
+      </div>
+
+      <!-- Communication -->
+      <div class="section-card" onclick="goTo('communication.html')">
+        <i class="fas fa-comments"></i>
+        <h2>Communication</h2>
+      </div>
+
+      <!-- Reports & Analytics -->
+      <div class="section-card" onclick="goTo('reports.html')">
+        <i class="fas fa-chart-bar"></i>
+        <h2>Reports & Analytics</h2>
+      </div>
+
+      <!-- Blog & Media -->
+      <div class="section-card" onclick="goTo('blog.html')">
+        <i class="fas fa-blog"></i>
+        <h2>Blog & Media</h2>
+      </div>
+
+      <!-- Novels -->
+      <div class="section-card" onclick="goTo('novels.html')">
+        <i class="fas fa-book-open"></i>
+        <h2>Novels</h2>
+      </div>
+
+      <!-- Learning & Resources -->
+      <div class="section-card" onclick="goTo('learning.html')">
+        <i class="fas fa-graduation-cap"></i>
+        <h2>Learning & Resources</h2>
+      </div>
+
+      <!-- Events & Calendar -->
+      <div class="section-card" onclick="goTo('calendar.html')">
+        <i class="fas fa-calendar-alt"></i>
+        <h2>Events & Calendar</h2>
+      </div>
+
+      <!-- File Sharing -->
+      <div class="section-card" onclick="goTo('files.html')">
+        <i class="fas fa-folder-open"></i>
+        <h2>File Sharing</h2>
+      </div>
+
+      <!-- Referrals -->
+      <div class="section-card" onclick="goTo('referrals.html')">
+        <i class="fas fa-user-friends"></i>
+        <h2>Referrals</h2>
+      </div>
+
+      <!-- Settings & Customization -->
+      <div class="section-card" onclick="goTo('settings.html')">
+        <i class="fas fa-cogs"></i>
+        <h2>Settings & Customization</h2>
+      </div>
+
+      <!-- Admin Access -->
+      <div class="section-card" onclick="goTo('admin.html')">
+        <i class="fas fa-user-shield"></i>
+        <h2>Admin Access</h2>
+      </div>
+    </div>
   </div>
 
-  <div class="section-card">
-    <h2>Admin Access</h2>
-  </div>
-
-  <div class="section-card">
-    <h2>Communication</h2>
-  </div>
-
-  <div class="section-card">
-    <h2>Reports & Analytics</h2>
-  </div>
-
-  <div class="section-card">
-    <h2>Blog & Media</h2>
-  </div>
-
-  <div class="section-card">
-    <h2>Events & Calendar</h2>
-  </div>
-
-  <div class="section-card">
-    <h2>Settings & Customization</h2>
-  </div>
-</div>
-
-  </div>  <script>
+  <script>
     function toggleTheme() {
       document.body.classList.toggle("dark-theme");
     }
 
     function logout() {
-      // Implement logout logic here
-      alert("Logged out");
+      window.location.href = "index.html";
     }
-  </script></body></html>
+
+    function goTo(page) {
+      window.location.href = page;
+    }
+  </script>
+</body>
+</html>

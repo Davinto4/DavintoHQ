@@ -4,6 +4,102 @@
   <meta charset="UTF-8" />
   <title>Tasks - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f5f7fa;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .task-box {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 1rem;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 0.3rem;
+      font-size: 1rem;
+    }
+
+    button {
+      padding: 10px 15px;
+      margin-top: 1rem;
+      border: none;
+      background-color: #1976d2;
+      color: white;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #125ea7;
+    }
+
+    .task-list {
+      margin-top: 2rem;
+    }
+
+    .task-item {
+      background: #f0f0f0;
+      padding: 10px;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+    }
+
+    .admin-only {
+      display: none;
+    }
+
+    .visible {
+      display: block !important;
+    }
+
+    .status {
+      margin-top: 10px;
+      color: green;
+    }
+  </style>
+</head>
+<body>
+  <div class="task-box">
+    <h2>Task Manager</h2>
+
+    <div id="adminControls" class="admin-only">
+      <label for="assignedTo">Assign To (email)</label>
+      <input type="email" id="assignedTo" placeholder="user@example.com" />
+
+      <label for="taskInput">Task</label>
+      <textarea id="taskInput" placeholder="Enter the task..."></textarea>
+
+      <button id="assignBtn">Assign Task</button>
+      <div class="status" id="statusMsg"></div>
+    </div>
+
+    <div class="task-list" id="taskList">
+      <h3>My Tasks</h3>
+      <!-- Tasks will be shown here -->
+    </div>
+  </div>
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -14,14 +110,14 @@
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import {
       getFirestore,
-      collection,
+      doc,
+      getDoc,
       addDoc,
-      getDocs,
+      collection,
       query,
       where,
-      Timestamp,
-      doc,
-      getDoc
+      getDocs,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -37,13 +133,15 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    let currentUserId = null;
-    let currentUserRole = "user";
+    const assignedToInput = document.getElementById("assignedTo");
+    const taskInput = document.getElementById("taskInput");
+    const assignBtn = document.getElementById("assignBtn");
+    const taskList = document.getElementById("taskList");
+    const adminControls = document.getElementById("adminControls");
+    const statusMsg = document.getElementById("statusMsg");
 
-    const taskForm = document.getElementById("taskForm");
-    const tasksContainer = document.getElementById("tasksContainer");
-    const assignToInput = document.getElementById("assignTo");
-    const taskFormSection = document.getElementById("taskFormSection");
+    let currentUserEmail = "";
+    let currentUserRole = "user";
 
     onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -51,183 +149,67 @@
         return;
       }
 
-      currentUserId = user.uid;
+      currentUserEmail = user.email;
 
-      const userDoc = await getDoc(doc(db, "users", currentUserId));
-      if (userDoc.exists()) {
-        const data = userDoc.data();
-        currentUserRole = data.role || "user";
+      // Fetch user role
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        currentUserRole = userSnap.data().role || "user";
 
         if (currentUserRole === "admin" || currentUserRole === "owner") {
-          taskFormSection.style.display = "block";
-        } else {
-          taskFormSection.style.display = "none";
+          adminControls.classList.add("visible");
         }
-
-        loadTasks(currentUserRole === "admin" || currentUserRole === "owner" ? null : currentUserId);
       }
+
+      loadUserTasks(currentUserEmail);
     });
 
-    async function loadTasks(filterByUserId = null) {
-      tasksContainer.innerHTML = "Loading tasks...";
-      let q;
-      if (filterByUserId) {
-        q = query(collection(db, "tasks"), where("assignedTo", "==", filterByUserId));
-      } else {
-        q = query(collection(db, "tasks"));
-      }
-
+    async function loadUserTasks(email) {
+      const q = query(collection(db, "tasks"), where("assignedTo", "==", email));
       const querySnapshot = await getDocs(q);
-      tasksContainer.innerHTML = "";
-
-      if (querySnapshot.empty) {
-        tasksContainer.innerHTML = "<p>No tasks found.</p>";
-        return;
-      }
+      taskList.innerHTML += querySnapshot.empty ? "<p>No tasks found.</p>" : "";
 
       querySnapshot.forEach((doc) => {
-        const task = doc.data();
-        const div = document.createElement("div");
-        div.className = "task";
-        div.innerHTML = `
-          <h4>${task.title}</h4>
-          <p>${task.description}</p>
-          <small><b>Assigned To:</b> ${task.assignedTo}</small><br/>
-          <small><b>Due:</b> ${task.dueDate?.toDate().toLocaleDateString()}</small>
+        const data = doc.data();
+        const taskItem = document.createElement("div");
+        taskItem.className = "task-item";
+        taskItem.innerHTML = `
+          <strong>Task:</strong> ${data.task}<br>
+          <strong>Assigned by:</strong> ${data.createdBy}
         `;
-        tasksContainer.appendChild(div);
+        taskList.appendChild(taskItem);
       });
     }
 
-    taskForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    assignBtn.addEventListener("click", async () => {
+      const assignedTo = assignedToInput.value.trim();
+      const task = taskInput.value.trim();
 
-      const title = document.getElementById("taskTitle").value.trim();
-      const description = document.getElementById("taskDesc").value.trim();
-      const dueDate = document.getElementById("taskDue").value;
-      const assignedTo = assignToInput.value.trim();
-
-      if (!title || !description || !dueDate || !assignedTo) {
-        alert("Please fill in all fields.");
+      if (!assignedTo || !task) {
+        statusMsg.textContent = "Please fill all fields.";
+        statusMsg.style.color = "red";
         return;
       }
 
       try {
         await addDoc(collection(db, "tasks"), {
-          title,
-          description,
-          dueDate: Timestamp.fromDate(new Date(dueDate)),
           assignedTo,
-          createdBy: currentUserId,
-          createdAt: Timestamp.now()
+          task,
+          createdBy: currentUserEmail,
+          timestamp: serverTimestamp()
         });
 
-        taskForm.reset();
-        loadTasks(currentUserRole === "admin" || currentUserRole === "owner" ? null : currentUserId);
-        alert("Task assigned!");
-      } catch (error) {
-        console.error("Error adding task:", error);
-        alert("Error adding task");
+        statusMsg.textContent = "Task assigned successfully!";
+        statusMsg.style.color = "green";
+        assignedToInput.value = "";
+        taskInput.value = "";
+      } catch (err) {
+        console.error("Error assigning task:", err);
+        statusMsg.textContent = "Failed to assign task.";
+        statusMsg.style.color = "red";
       }
     });
   </script>
-
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f7fa;
-      padding: 2rem;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-
-    #taskFormSection {
-      background: #fff;
-      padding: 1rem;
-      border-radius: 8px;
-      max-width: 500px;
-      margin: auto;
-      margin-bottom: 2rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-
-    label {
-      display: block;
-      margin-top: 1rem;
-      font-weight: bold;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 0.3rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-    }
-
-    button {
-      margin-top: 1rem;
-      padding: 12px;
-      background: #1976d2;
-      color: #fff;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    #tasksContainer {
-      max-width: 600px;
-      margin: auto;
-    }
-
-    .task {
-      background: #fff;
-      border-left: 4px solid #1976d2;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border-radius: 6px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
-    }
-
-    .task h4 {
-      margin: 0 0 0.5rem;
-    }
-
-    .task p {
-      margin: 0 0 0.5rem;
-    }
-
-    .task small {
-      color: #555;
-    }
-  </style>
-</head>
-
-<body>
-  <h2>My Tasks</h2>
-
-  <div id="taskFormSection" style="display: none;">
-    <form id="taskForm">
-      <label for="taskTitle">Task Title</label>
-      <input type="text" id="taskTitle" required />
-
-      <label for="taskDesc">Description</label>
-      <textarea id="taskDesc" rows="4" required></textarea>
-
-      <label for="taskDue">Due Date</label>
-      <input type="date" id="taskDue" required />
-
-      <label for="assignTo">Assign To (User UID)</label>
-      <input type="text" id="assignTo" placeholder="Enter User UID" required />
-
-      <button type="submit">Assign Task</button>
-    </form>
-  </div>
-
-  <div id="tasksContainer">Loading tasks...</div>
 </body>
 </html>

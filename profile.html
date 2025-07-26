@@ -6,97 +6,56 @@
   <title>User Profile</title>
   <link rel="stylesheet" href="style.css" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f7f7f7;
-    }
-    .profile-section {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      max-width: 600px;
-      margin: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    }
-    .profile-item {
-      margin-bottom: 15px;
-    }
-    .profile-item label {
-      font-weight: bold;
-      display: block;
-    }
-    .profile-item span {
-      display: inline-block;
-      margin-right: 10px;
-    }
-    .edit-btn {
-      background: #007bff;
-      color: white;
-      border: none;
-      padding: 5px 10px;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-    }
-    .edit-btn:hover {
-      background: #0056b3;
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 6px;
-      margin-top: 5px;
-      box-sizing: border-box;
-    }
-    #save-btn {
-      background: #28a745;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 4px;
-      cursor: pointer;
-    }
-    #save-btn:hover {
-      background: #1e7e34;
-    }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
+    h1 { color: #333; }
+    .profile-section { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+    .field { margin-bottom: 15px; }
+    .field label { display: block; font-weight: bold; margin-bottom: 5px; }
+    .field span, .field input { display: block; width: 100%; }
+    .field input { padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; display: none; }
+    .actions { margin-top: 20px; }
+    button { padding: 10px 15px; margin-right: 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
+    button:hover { background: #0056b3; }
+    #changePasswordSection { margin-top: 30px; }
   </style>
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
 </head>
 <body>
-
+  <h1>User Profile</h1>
   <div class="profile-section">
-    <h2>Hello there 👋 Welcome to DavintoHQ</h2>
-
-    <div class="profile-item">
+    <div class="field">
       <label>Username:</label>
-      <span id="usernameText"></span>
-      <input type="text" id="usernameInput" style="display:none;" />
-      <button class="edit-btn" onclick="editField('username')">Edit</button>
+      <span id="usernameDisplay"></span>
+      <input type="text" id="usernameInput" />
     </div>
-
-    <div class="profile-item">
+    <div class="field">
       <label>Email:</label>
-      <span id="emailText"></span>
-      <input type="text" id="emailInput" style="display:none;" />
-      <button class="edit-btn" onclick="editField('email')">Edit</button>
+      <span id="emailDisplay"></span>
+      <input type="email" id="emailInput" />
     </div>
-
-    <div class="profile-item">
+    <div class="field">
       <label>Phone Number:</label>
-      <span id="phoneText"></span>
-      <input type="text" id="phoneInput" style="display:none;" />
-      <button class="edit-btn" onclick="editField('phone')">Edit</button>
+      <span id="phoneDisplay"></span>
+      <input type="text" id="phoneInput" />
     </div>
-
-    <div class="profile-item">
+    <div class="field">
       <label>Role:</label>
-      <span id="roleText"></span>
+      <span id="roleDisplay" style="font-weight: bold;"></span>
     </div>
 
-    <button id="save-btn" onclick="saveChanges()">Save Changes</button>
+    <div class="actions">
+      <button onclick="toggleEdit()">Edit</button>
+      <button onclick="saveChanges()" style="display: none;" id="saveBtn">Save</button>
+      <button onclick="logout()">Logout</button>
+    </div>
+
+    <div id="changePasswordSection">
+      <h3>Change Password</h3>
+      <input type="email" id="resetEmail" placeholder="Enter your email" />
+      <button onclick="sendPasswordReset()">Send Reset Email</button>
+    </div>
   </div>
 
   <script>
@@ -108,59 +67,85 @@
       messagingSenderId: "156992522736",
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
-
     firebase.initializeApp(firebaseConfig);
+
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    let userRef;
+    let currentUser = null;
 
     auth.onAuthStateChanged(async user => {
       if (user) {
-        userRef = db.collection("users").doc(user.uid);
-        const doc = await userRef.get();
-        const data = doc.data();
-
-        document.getElementById('usernameText').textContent = data.username || "Not set";
-        document.getElementById('usernameInput').value = data.username || "";
-
-        document.getElementById('emailText').textContent = data.email || user.email || "Not set";
-        document.getElementById('emailInput').value = data.email || user.email || "";
-
-        document.getElementById('phoneText').textContent = data.phone || "Not set";
-        document.getElementById('phoneInput').value = data.phone || "";
-
-        document.getElementById('roleText').textContent = data.role || "user";
+        currentUser = user;
+        document.getElementById("resetEmail").value = user.email;
+        const userDoc = await db.collection("users").doc(user.uid).get();
+        if (userDoc.exists) {
+          const data = userDoc.data();
+          document.getElementById("usernameDisplay").textContent = data.username || "Not set";
+          document.getElementById("emailDisplay").textContent = user.email || "N/A";
+          document.getElementById("phoneDisplay").textContent = data.phone || "Not set";
+          document.getElementById("roleDisplay").textContent = data.role || "user";
+          // Pre-fill input fields
+          document.getElementById("usernameInput").value = data.username || "";
+          document.getElementById("emailInput").value = user.email || "";
+          document.getElementById("phoneInput").value = data.phone || "";
+        }
       } else {
-        window.location.href = "index.html";
+        window.location.href = "index.html"; // Redirect if not logged in
       }
     });
 
-    function editField(field) {
-      document.getElementById(`${field}Text`).style.display = 'none';
-      document.getElementById(`${field}Input`).style.display = 'block';
+    function toggleEdit() {
+      document.getElementById("usernameDisplay").style.display = "none";
+      document.getElementById("emailDisplay").style.display = "none";
+      document.getElementById("phoneDisplay").style.display = "none";
+
+      document.getElementById("usernameInput").style.display = "block";
+      document.getElementById("emailInput").style.display = "block";
+      document.getElementById("phoneInput").style.display = "block";
+
+      document.getElementById("saveBtn").style.display = "inline-block";
     }
 
-    function saveChanges() {
-      const username = document.getElementById('usernameInput').value.trim();
-      const email = document.getElementById('emailInput').value.trim();
-      const phone = document.getElementById('phoneInput').value.trim();
+    async function saveChanges() {
+      const username = document.getElementById("usernameInput").value.trim();
+      const email = document.getElementById("emailInput").value.trim();
+      const phone = document.getElementById("phoneInput").value.trim();
 
-      userRef.update({ username, email, phone }).then(() => {
-        document.getElementById('usernameText').textContent = username;
-        document.getElementById('emailText').textContent = email;
-        document.getElementById('phoneText').textContent = phone;
+      if (currentUser && username && email) {
+        try {
+          // Update Auth email
+          if (email !== currentUser.email) {
+            await currentUser.updateEmail(email);
+          }
 
-        // Hide inputs
-        ['username', 'email', 'phone'].forEach(field => {
-          document.getElementById(`${field}Input`).style.display = 'none';
-          document.getElementById(`${field}Text`).style.display = 'inline-block';
-        });
+          // Update Firestore data
+          await db.collection("users").doc(currentUser.uid).update({
+            username,
+            phone
+          });
 
-        alert("Profile updated successfully.");
-      }).catch(error => {
-        alert("Update failed: " + error.message);
-      });
+          alert("Profile updated!");
+
+          // Reload
+          location.reload();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      }
+    }
+
+    function sendPasswordReset() {
+      const email = document.getElementById("resetEmail").value.trim();
+      if (email) {
+        auth.sendPasswordResetEmail(email)
+          .then(() => alert("Password reset email sent."))
+          .catch(err => alert("Error: " + err.message));
+      }
+    }
+
+    function logout() {
+      auth.signOut().then(() => window.location.href = "index.html");
     }
   </script>
 </body>

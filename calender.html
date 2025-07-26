@@ -1,121 +1,102 @@
 <!DOCTYPE html><html lang="en"><head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ | Calendar</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-</head><body>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DavintoHQ Calendar</title>
+  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <script src="https://apis.google.com/js/api.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head><body onload="loadGoogleApi()">
   <div class="container">
-    <div class="dashboard-header">
-      <div class="header-left">
-        <h1 class="logo">DavintoHQ Calendar</h1>
-      </div>
-      <div class="header-right">
-        <button class="theme-toggle" onclick="toggleTheme()">
-          <i class="fas fa-adjust"></i>
-        </button>
-        <button class="logout-button" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
-    </div><div class="calendar-section">
-  <h2 class="section-title">My Calendar</h2>
-  <form id="event-form">
-    <input type="text" id="event-title" placeholder="Event Title" required />
-    <input type="datetime-local" id="event-datetime" required />
-    <button type="submit"><i class="fas fa-plus"></i> Add Event</button>
-  </form>
-  <ul id="event-list"></ul>
-</div>
+    <h1><span class="material-icons">calendar_month</span> DavintoHQ Calendar</h1><form id="eventForm">
+  <input type="text" id="eventTitle" placeholder="Event Title" required>
+  <input type="datetime-local" id="eventDateTime" required>
+  <button type="submit">Add Event</button>
+</form>
+
+<ul id="eventList"></ul>
 
   </div>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut,
-      signInAnonymously
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      getDocs,
-      deleteDoc,
-      doc,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getFirestore, collection, addDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
     const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
     };
 
     const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const eventForm = document.getElementById("event-form");
-    const eventTitle = document.getElementById("event-title");
-    const eventDatetime = document.getElementById("event-datetime");
-    const eventList = document.getElementById("event-list");
+    const eventForm = document.getElementById('eventForm');
+    const eventList = document.getElementById('eventList');
 
-    let userId = null;
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        userId = user.uid;
-        const eventsRef = collection(db, "users", userId, "events");
-
-        onSnapshot(eventsRef, (snapshot) => {
-          eventList.innerHTML = "";
-          snapshot.forEach(doc => {
-            const event = doc.data();
-            const li = document.createElement("li");
-            const date = new Date(event.datetime).toLocaleString();
-            li.innerHTML = `
-              <span><strong>${event.title}</strong> - ${date}</span>
-              <button onclick="deleteEvent('${doc.id}')"><i class='fas fa-trash'></i></button>
-            `;
-            eventList.appendChild(li);
-          });
-        });
-      } else {
-        signInAnonymously(auth);
-      }
-    });
-
-    eventForm.addEventListener("submit", async (e) => {
+    eventForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const title = eventTitle.value.trim();
-      const datetime = eventDatetime.value;
-      if (title && datetime && userId) {
-        await addDoc(collection(db, "users", userId, "events"), { title, datetime });
-        eventTitle.value = "";
-        eventDatetime.value = "";
-      }
+      const title = document.getElementById('eventTitle').value;
+      const datetime = document.getElementById('eventDateTime').value;
+
+      await addDoc(collection(db, 'calendarEvents'), { title, datetime });
+      addToGoogleCalendar(title, datetime);
+      eventForm.reset();
     });
 
-    window.deleteEvent = async (eventId) => {
-      if (userId) {
-        await deleteDoc(doc(db, "users", userId, "events", eventId));
-      }
-    };
+    onSnapshot(collection(db, 'calendarEvents'), (snapshot) => {
+      eventList.innerHTML = '';
+      snapshot.forEach(doc => {
+        const event = doc.data();
+        const li = document.createElement('li');
+        li.innerHTML = `<strong>${event.title}</strong> <br> ${new Date(event.datetime).toLocaleString()}`;
+        eventList.appendChild(li);
+      });
+    });
+  </script>  <script>
+    const CLIENT_ID = '1051221287063-dl1ag2bdea9dojk6pvllfokccdqo7fmv.apps.googleusercontent.com';
+    const SCOPES = 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events';
 
-    window.logout = function () {
-      signOut(auth).then(() => {
-        location.href = "index.html";
+    function loadGoogleApi() {
+      gapi.load('client:auth2', initClient);
+    }
+
+    function initClient() {
+      gapi.client.init({
+        clientId: CLIENT_ID,
+        scope: SCOPES,
+      }).then(() => {
+        const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+        updateSigninStatus(isSignedIn);
+        gapi.auth2.getAuthInstance().isSignedIn.listen(updateSigninStatus);
       });
     }
 
-    window.toggleTheme = function () {
-      document.body.classList.toggle("dark-theme");
+    function updateSigninStatus(isSignedIn) {
+      if (!isSignedIn) gapi.auth2.getAuthInstance().signIn();
+    }
+
+    function addToGoogleCalendar(title, datetime) {
+      const event = {
+        summary: title,
+        start: {
+          dateTime: new Date(datetime).toISOString(),
+          timeZone: 'Africa/Lagos',
+        },
+        end: {
+          dateTime: new Date(new Date(datetime).getTime() + 60 * 60 * 1000).toISOString(),
+          timeZone: 'Africa/Lagos',
+        },
+      };
+
+      gapi.client.calendar.events.insert({
+        calendarId: 'primary',
+        resource: event,
+      }).then(response => {
+        console.log('Added to Google Calendar:', response);
+      }, err => {
+        console.error('Error adding to calendar:', err);
+      });
     }
   </script></body></html>

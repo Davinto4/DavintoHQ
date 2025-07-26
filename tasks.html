@@ -1,38 +1,35 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DavintoHQ - Task Manager</title>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <title>DavintoHQ Tasks</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-    .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    h1 { text-align: center; }
-    input, textarea, button, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 5px; border: 1px solid #ccc; }
-    button { background-color: #007bff; color: white; cursor: pointer; }
-    button:hover { background-color: #0056b3; }
-    .task { padding: 10px; background: #f9f9f9; margin-top: 10px; border-left: 4px solid #007bff; }
-    .task strong { color: #333; }
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .task { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+    .admin-only { margin-bottom: 30px; padding: 10px; background: #f9f9f9; border-left: 4px solid #333; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Task Manager</h1><div id="userSection" style="margin-bottom: 20px;"></div>
 
-<div id="taskForm" style="display: none;">
-  <h3>Assign a New Task</h3>
-  <input type="text" id="taskTitle" placeholder="Task Title" required>
-  <textarea id="taskDescription" placeholder="Task Description" required></textarea>
-  <input type="text" id="assignedTo" placeholder="Assign to (Username)" required>
-  <button onclick="addTask()">Add Task</button>
-</div>
+  <h2>DavintoHQ Tasks</h2>
+  <div id="welcome"></div>
 
-<h3>My Tasks</h3>
-<div id="taskList"></div>
+  <div id="adminPanel" class="admin-only" style="display:none;">
+    <h3>Assign Task (Admins Only)</h3>
+    <input type="text" id="targetUsername" placeholder="Recipient Username"><br><br>
+    <input type="text" id="taskTitle" placeholder="Task Title"><br><br>
+    <textarea id="taskDesc" placeholder="Task Description"></textarea><br><br>
+    <button onclick="assignTask()">Assign Task</button>
+    <p id="status"></p>
+  </div>
 
-  </div>  <script>
+  <h3>Your Tasks</h3>
+  <div id="taskList"></div>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
@@ -47,69 +44,79 @@
     const db = firebase.firestore();
 
     let currentUser = null;
-    let currentUsername = "";
+    let currentUserData = null;
 
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
         const userDoc = await db.collection('users').doc(user.uid).get();
-        const userData = userDoc.data();
-        currentUsername = userData.username || "Unknown";
+        currentUserData = userDoc.data();
+        document.getElementById("welcome").innerHTML =
+          `<p>Hello <strong>${currentUserData?.username || "User"}</strong> 👋</p>`;
 
-        document.getElementById('userSection').innerHTML = `<p>Logged in as <strong>${currentUsername}</strong> (${userData.role})</p>`;
-
-        if (userData.role === 'admin' || userData.role === 'owner') {
-          document.getElementById('taskForm').style.display = 'block';
+        // Show admin task panel if role is admin or owner
+        if (["admin", "owner"].includes(currentUserData?.role)) {
+          document.getElementById("adminPanel").style.display = "block";
         }
 
-        loadTasks();
+        loadTasks(currentUserData?.username);
       } else {
-        document.getElementById('userSection').innerHTML = '<p>Please sign in to use tasks.</p>';
+        alert("Please login to view tasks.");
       }
     });
 
-    async function addTask() {
-      const title = document.getElementById('taskTitle').value;
-      const description = document.getElementById('taskDescription').value;
-      const assignedTo = document.getElementById('assignedTo').value;
+    async function assignTask() {
+      const username = document.getElementById("targetUsername").value.trim();
+      const title = document.getElementById("taskTitle").value.trim();
+      const desc = document.getElementById("taskDesc").value.trim();
+      const statusText = document.getElementById("status");
 
-      if (!title || !description || !assignedTo) {
-        alert("Please fill in all fields.");
+      if (!username || !title || !desc) {
+        statusText.innerText = "All fields are required.";
         return;
       }
 
       try {
-        await db.collection('tasks').add({
-          title,
-          description,
-          assignedTo,
-          createdBy: currentUsername,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        await db.collection("tasks").add({
+          assignedTo: username,
+          title: title,
+          description: desc,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+          assignedBy: currentUserData?.username || "Unknown"
         });
-        alert("Task added successfully.");
-        document.getElementById('taskTitle').value = "";
-        document.getElementById('taskDescription').value = "";
-        document.getElementById('assignedTo').value = "";
-        loadTasks();
-      } catch (error) {
-        alert("Failed to add task: " + error.message);
+        statusText.innerText = "✅ Task assigned successfully!";
+        document.getElementById("targetUsername").value = '';
+        document.getElementById("taskTitle").value = '';
+        document.getElementById("taskDesc").value = '';
+      } catch (e) {
+        statusText.innerText = "❌ Failed to assign task: " + e.message;
       }
     }
 
-    async function loadTasks() {
-      const tasksRef = await db.collection('tasks').where("assignedTo", "==", currentUsername).orderBy("timestamp", "desc").get();
-      const taskList = document.getElementById('taskList');
-      taskList.innerHTML = "";
-      tasksRef.forEach(doc => {
-        const task = doc.data();
-        taskList.innerHTML += `
-          <div class="task">
-            <strong>${task.title}</strong><br>
-            ${task.description}<br>
-            <small>Assigned by: ${task.createdBy}</small>
-          </div>
-        `;
-      });
+    function loadTasks(myUsername) {
+      db.collection("tasks")
+        .where("assignedTo", "==", myUsername)
+        .orderBy("createdAt", "desc")
+        .onSnapshot(snapshot => {
+          const taskList = document.getElementById("taskList");
+          taskList.innerHTML = "";
+          snapshot.forEach(doc => {
+            const task = doc.data();
+            const div = document.createElement("div");
+            div.className = "task";
+            div.innerHTML = `
+              <strong>${task.title}</strong><br>
+              <small><i>Assigned by ${task.assignedBy || 'admin'}</i></small><br>
+              <p>${task.description}</p>
+            `;
+            taskList.appendChild(div);
+          });
+
+          if (snapshot.empty) {
+            taskList.innerHTML = "<p>No tasks assigned to you yet.</p>";
+          }
+        });
     }
-  </script></body>
+  </script>
+</body>
 </html>

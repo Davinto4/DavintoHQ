@@ -1,106 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
+<!DOCTYPE html><html lang="en"><head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DavintoHQ | Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-</head>
-
-<body>
+  <style>
+    .dashboard-sections {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      padding: 1rem;
+    }
+    .section-button {
+      width: 100%;
+      max-width: 600px;
+      margin: 0.5rem 0;
+      padding: 1rem;
+      font-size: 1.2rem;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    .section-button:hover {
+      background-color: #0056b3;
+    }
+    .section-button i {
+      margin-right: 10px;
+    }
+  </style>
+</head><body>
   <div class="dashboard-container">
     <div class="dashboard-header">
       <h1 class="logo">DavintoHQ Dashboard</h1>
-      <div class="header-buttons">
-        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
-          <i class="fas fa-adjust"></i>
-        </button>
-        <button class="logout-button" onclick="logout()" title="Logout">
-          <i class="fas fa-sign-out-alt"></i>
-        </button>
-      </div>
-    </div>
+      <button class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-adjust"></i>
+      </button>
+      <button class="logout-button" onclick="logout()">
+        <i class="fas fa-sign-out-alt"></i> Logout
+      </button>
+    </div><div class="dashboard-sections">
+  <button class="section-button" onclick="location.href='user-search.html'">
+    <i class="fas fa-user"></i> User Utilities
+  </button>
+  <button class="section-button" onclick="location.href='notifications.html'">
+    <i class="fas fa-bell"></i> Notifications
+  </button>
+  <button class="section-button" onclick="location.href='tasks.html'">
+    <i class="fas fa-tasks"></i> Tasks
+  </button>
+  <button class="section-button" onclick="location.href='calendar.html'">
+    <i class="fas fa-calendar"></i> Calendar
+  </button>
 
-    <div class="dashboard-buttons">
-      <!-- USER UTILITIES -->
-      <a href="user-search.html" class="dashboard-btn"><i class="fas fa-search"></i> User Search</a>
-      <a href="notifications.html" class="dashboard-btn"><i class="fas fa-bell"></i> Notifications</a>
-      <a href="tasks.html" class="dashboard-btn"><i class="fas fa-tasks"></i> Tasks</a>
-      <a href="calendar.html" class="dashboard-btn"><i class="fas fa-calendar-alt"></i> Calendar</a>
-      <a href="support.html" class="dashboard-btn"><i class="fas fa-headset"></i> Support</a>
-      <a href="my-profile.html" class="dashboard-btn"><i class="fas fa-user"></i> My Profile</a>
-      <a href="settings.html" class="dashboard-btn"><i class="fas fa-cog"></i> Settings</a>
-      <a href="referrals.html" class="dashboard-btn"><i class="fas fa-user-friends"></i> Referrals</a>
-      <a href="file-sharing.html" class="dashboard-btn"><i class="fas fa-file-upload"></i> File Sharing</a>
-      <a href="announcements.html" class="dashboard-btn"><i class="fas fa-bullhorn"></i> Announcements</a>
+  <button class="section-button" onclick="location.href='referrals.html'">
+    <i class="fas fa-share-alt"></i> Referrals
+  </button>
+  <button class="section-button" onclick="location.href='file-sharing.html'">
+    <i class="fas fa-file-upload"></i> File Sharing
+  </button>
+  <button class="section-button" onclick="location.href='announcements.html'">
+    <i class="fas fa-bullhorn"></i> Announcements
+  </button>
+  <button class="section-button" onclick="location.href='settings.html'">
+    <i class="fas fa-cog"></i> Settings
+  </button>
+  <button class="section-button" onclick="location.href='global-chat.html'">
+    <i class="fas fa-comments"></i> Global Chat
+  </button>
+  <button class="section-button" onclick="location.href='social-feed.html'">
+    <i class="fas fa-rss"></i> Social Feed
+  </button>
 
-      <!-- SOCIAL FEATURES -->
-      <a href="global-chat.html" class="dashboard-btn"><i class="fas fa-comments"></i> Global Chat</a>
-      <a href="social-feed.html" class="dashboard-btn"><i class="fas fa-rss"></i> Social Feed</a>
-      <a href="blog.html" class="dashboard-btn"><i class="fas fa-blog"></i> Blog</a>
-      <a href="groups.html" class="dashboard-btn"><i class="fas fa-users"></i> Groups</a>
-      <a href="polls.html" class="dashboard-btn"><i class="fas fa-poll"></i> Polls</a>
-      <a href="events.html" class="dashboard-btn"><i class="fas fa-calendar-check"></i> Events</a>
-      <a href="messages.html" class="dashboard-btn"><i class="fas fa-envelope"></i> Messages</a>
-      <a href="photos.html" class="dashboard-btn"><i class="fas fa-image"></i> Photos</a>
-      <a href="videos.html" class="dashboard-btn"><i class="fas fa-video"></i> Videos</a>
-      <a href="stories.html" class="dashboard-btn"><i class="fas fa-book-open"></i> Stories</a>
+  <button class="section-button" onclick="location.href='blog.html'">
+    <i class="fas fa-blog"></i> Blog
+  </button>
+  <button class="section-button" onclick="location.href='groups.html'">
+    <i class="fas fa-users"></i> Groups
+  </button>
 
-      <!-- WRITING & NOVELS -->
-      <a href="write-book.html" class="dashboard-btn"><i class="fas fa-pen-nib"></i> Write a Novel</a>
-      <a href="read-books.html" class="dashboard-btn"><i class="fas fa-book-reader"></i> Read Novels</a>
-      <a href="my-library.html" class="dashboard-btn"><i class="fas fa-archive"></i> My Library</a>
-      <a href="drafts.html" class="dashboard-btn"><i class="fas fa-pencil-alt"></i> Drafts</a>
-      <a href="publishing.html" class="dashboard-btn"><i class="fas fa-upload"></i> Publishing</a>
-      <a href="feedback.html" class="dashboard-btn"><i class="fas fa-comments-dollar"></i> Feedback</a>
-      <a href="earnings.html" class="dashboard-btn"><i class="fas fa-money-bill-wave"></i> Earnings</a>
-      <a href="genres.html" class="dashboard-btn"><i class="fas fa-tags"></i> Genres</a>
-      <a href="favorites.html" class="dashboard-btn"><i class="fas fa-heart"></i> Favorites</a>
-      <a href="book-club.html" class="dashboard-btn"><i class="fas fa-users-cog"></i> Book Club</a>
+  <button class="section-button" onclick="location.href='courses.html'">
+    <i class="fas fa-graduation-cap"></i> Courses
+  </button>
+  <button class="section-button" onclick="location.href='documentation.html'">
+    <i class="fas fa-book"></i> Documentation
+  </button>
+  <button class="section-button" onclick="location.href='tips.html'">
+    <i class="fas fa-lightbulb"></i> Tips
+  </button>
 
-      <!-- LEARNING & RESOURCES -->
-      <a href="courses.html" class="dashboard-btn"><i class="fas fa-graduation-cap"></i> Courses</a>
-      <a href="documentation.html" class="dashboard-btn"><i class="fas fa-book"></i> Documentation</a>
-      <a href="tips.html" class="dashboard-btn"><i class="fas fa-lightbulb"></i> Tips</a>
-      <a href="cheatsheets.html" class="dashboard-btn"><i class="fas fa-scroll"></i> Cheatsheets</a>
-      <a href="code-snippets.html" class="dashboard-btn"><i class="fas fa-code"></i> Code Snippets</a>
-      <a href="tech-news.html" class="dashboard-btn"><i class="fas fa-newspaper"></i> Tech News</a>
-      <a href="glossary.html" class="dashboard-btn"><i class="fas fa-spell-check"></i> Glossary</a>
-      <a href="how-to.html" class="dashboard-btn"><i class="fas fa-tools"></i> How To Guides</a>
-      <a href="video-tutorials.html" class="dashboard-btn"><i class="fas fa-video"></i> Video Tutorials</a>
-      <a href="webinars.html" class="dashboard-btn"><i class="fas fa-chalkboard-teacher"></i> Webinars</a>
+  <button class="section-button" onclick="location.href='write-book.html'">
+    <i class="fas fa-pen-nib"></i> Write a Novel
+  </button>
+  <button class="section-button" onclick="location.href='read-books.html'">
+    <i class="fas fa-book-reader"></i> Read Novels
+  </button>
+  <button class="section-button" onclick="location.href='my-library.html'">
+    <i class="fas fa-book-open"></i> My Library
+  </button>
 
-      <!-- ADMIN ACCESS (Admins Only) -->
-      <div id="admin-section" style="display: none;">
-        <a href="admin-panel.html" class="dashboard-btn admin-btn">
-          <i class="fas fa-user-shield"></i> Admin Panel
-        </a>
-      </div>
-    </div>
-  </div>
+  <button class="section-button" onclick="location.href='admin-panel.html'" id="admin-access" style="display:none">
+    <i class="fas fa-tools"></i> Admin Access
+  </button>
+</div>
 
-  <script>
+  </div>  <script>
     function toggleTheme() {
       document.body.classList.toggle("dark-theme");
     }
 
     function logout() {
-      window.location.href = "index.html";
+      window.location.href = 'index.html';
     }
 
-    function isAdmin() {
-      // Replace with actual logic from Firebase or localStorage
-      const userRole = localStorage.getItem("role");
-      return userRole === "admin" || userRole === "owner";
+    // Admin visibility logic (placeholder logic, adjust based on auth system)
+    const userRole = localStorage.getItem("userRole");
+    if (userRole === "admin" || userRole === "owner") {
+      document.getElementById("admin-access").style.display = "block";
     }
-
-    // Show admin section only if admin
-    if (isAdmin()) {
-      document.getElementById("admin-section").style.display = "block";
-    }
-  </script>
-</body>
-
-</html>
+  </script></body></html>

@@ -8,8 +8,17 @@
   <!-- Firebase SDK (Modular) -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -24,36 +33,64 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    // When the page loads
     window.addEventListener('DOMContentLoaded', () => {
-      const usernameEl = document.getElementById("username");
-      const emailEl = document.getElementById("email");
-      const phoneEl = document.getElementById("phone");
-      const roleEl = document.getElementById("role");
+      const usernameInput = document.getElementById("username");
+      const emailInput = document.getElementById("email");
+      const phoneInput = document.getElementById("phone");
+      const roleInput = document.getElementById("role");
+      const saveBtn = document.getElementById("saveBtn");
       const logoutBtn = document.getElementById("logoutBtn");
+      const statusMsg = document.getElementById("statusMsg");
+
+      let currentUserUID = null;
 
       onAuthStateChanged(auth, async (user) => {
         if (!user) {
-          window.location.href = "index.html"; // Redirect if not logged in
+          window.location.href = "index.html";
           return;
         }
 
-        emailEl.textContent = user.email || "No Email";
+        currentUserUID = user.uid;
+        emailInput.value = user.email || "N/A";
 
         try {
           const userRef = doc(db, "users", user.uid);
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             const data = userSnap.data();
-            usernameEl.textContent = data.username || "N/A";
-            phoneEl.textContent = data.phone || "N/A";
-            roleEl.textContent = data.role || "user";
+            usernameInput.value = data.username || "";
+            phoneInput.value = data.phone || "";
+            roleInput.value = data.role || "user";
           } else {
-            alert("User data not found.");
+            statusMsg.textContent = "User profile not found.";
           }
         } catch (error) {
-          console.error("Error fetching user document:", error);
-          alert("Failed to load user profile.");
+          console.error(error);
+          statusMsg.textContent = "Error loading profile.";
+        }
+      });
+
+      saveBtn.addEventListener("click", async () => {
+        const newUsername = usernameInput.value.trim();
+        const newPhone = phoneInput.value.trim();
+
+        if (!currentUserUID || !newUsername || !newPhone) {
+          statusMsg.textContent = "Please fill in all fields.";
+          return;
+        }
+
+        try {
+          const userRef = doc(db, "users", currentUserUID);
+          await updateDoc(userRef, {
+            username: newUsername,
+            phone: newPhone
+          });
+          statusMsg.textContent = "Profile updated successfully!";
+          statusMsg.style.color = "green";
+        } catch (error) {
+          console.error("Error updating profile:", error);
+          statusMsg.textContent = "Failed to update profile.";
+          statusMsg.style.color = "red";
         }
       });
 
@@ -72,6 +109,7 @@
       margin: 0;
       padding: 2rem;
     }
+
     .profile-box {
       background: #fff;
       padding: 2rem;
@@ -80,38 +118,68 @@
       margin: auto;
       box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     }
+
     h2 {
       text-align: center;
       margin-bottom: 2rem;
       color: #333;
     }
-    .item {
-      margin-bottom: 1.2rem;
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+      color: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
       font-size: 1rem;
     }
-    .label {
-      font-weight: bold;
-      color: #444;
+
+    input[readonly] {
+      background: #eee;
     }
-    .value {
-      margin-left: 8px;
-      color: #111;
-    }
-    .logout-btn {
+
+    .btn {
       display: block;
       width: 100%;
-      margin-top: 2rem;
+      margin-top: 1.5rem;
       padding: 12px;
-      background: #d32f2f;
-      color: #fff;
-      border: none;
       font-size: 1rem;
+      border: none;
       border-radius: 6px;
       cursor: pointer;
       transition: background 0.3s ease;
     }
-    .logout-btn:hover {
+
+    #saveBtn {
+      background: #1976d2;
+      color: white;
+    }
+
+    #saveBtn:hover {
+      background: #115293;
+    }
+
+    #logoutBtn {
+      background: #d32f2f;
+      color: white;
+    }
+
+    #logoutBtn:hover {
       background: #b71c1c;
+    }
+
+    #statusMsg {
+      margin-top: 1rem;
+      font-weight: bold;
+      text-align: center;
+      color: #d32f2f;
     }
   </style>
 </head>
@@ -119,12 +187,23 @@
 <body>
   <div class="profile-box">
     <h2>My Profile</h2>
-    <div class="item"><span class="label">Username:</span><span class="value" id="username">Loading...</span></div>
-    <div class="item"><span class="label">Email:</span><span class="value" id="email">Loading...</span></div>
-    <div class="item"><span class="label">Phone:</span><span class="value" id="phone">Loading...</span></div>
-    <div class="item"><span class="label">Role:</span><span class="value" id="role">Loading...</span></div>
 
-    <button class="logout-btn" id="logoutBtn">Logout</button>
+    <label for="username">Username</label>
+    <input type="text" id="username" placeholder="Enter username" />
+
+    <label for="email">Email</label>
+    <input type="text" id="email" readonly />
+
+    <label for="phone">Phone</label>
+    <input type="text" id="phone" placeholder="Enter phone" />
+
+    <label for="role">Role</label>
+    <input type="text" id="role" readonly />
+
+    <button id="saveBtn" class="btn">Save Changes</button>
+    <button id="logoutBtn" class="btn">Logout</button>
+
+    <div id="statusMsg"></div>
   </div>
 </body>
 </html>

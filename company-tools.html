@@ -4,25 +4,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Company Tools</title>
   <link rel="stylesheet" href="styles.css">
-  <script defer src="tools.js"></script>
 </head>
 <body>
-  <h1>🛠️ Company Tools</h1>  <div id="toolSection">
-    <h3>Add New Tool</h3>
-    <input type="text" id="toolNameInput" placeholder="Tool Name">
-    <input type="url" id="toolLinkInput" placeholder="Tool Link (https://)">
-    <select id="toolCategorySelect">
-      <option value="development">Development</option>
-      <option value="design">Design</option>
-      <option value="communication">Communication</option>
-      <option value="management">Management</option>
-    </select>
+  <h1>🛠️ Company Tools</h1>  <div id="toolFormSection" style="margin-bottom: 20px;">
+    <h3>Add New Tool (Admin Only)</h3>
+    <input type="text" id="toolName" placeholder="Tool Name">
+    <input type="url" id="toolLink" placeholder="Tool Link">
+    <input type="text" id="toolCategory" placeholder="Category">
     <button id="addToolBtn">Add Tool</button>
+  </div>  <div>
+    <label for="categoryFilter">Filter by Category:</label>
+    <select id="categoryFilter">
+      <option value="all">All</option>
+    </select>
   </div>  <div id="toolsList"></div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
     import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
     import {
-      getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp
+      getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
+      query, orderBy, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -38,55 +38,106 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const toolNameInput = document.getElementById('toolNameInput');
-    const toolLinkInput = document.getElementById('toolLinkInput');
-    const toolCategorySelect = document.getElementById('toolCategorySelect');
+    const toolName = document.getElementById('toolName');
+    const toolLink = document.getElementById('toolLink');
+    const toolCategory = document.getElementById('toolCategory');
     const addToolBtn = document.getElementById('addToolBtn');
     const toolsList = document.getElementById('toolsList');
+    const categoryFilter = document.getElementById('categoryFilter');
 
     let currentUser = null;
+    let userRole = 'user';
 
     onAuthStateChanged(auth, async (user) => {
       if (user) {
         currentUser = user;
-        await loadTools();
+        const userSnap = await getDocs(query(collection(db, 'users')));
+        userSnap.forEach(doc => {
+          if (doc.id === currentUser.uid) {
+            userRole = doc.data().role || 'user';
+          }
+        });
+
+        if (userRole !== 'admin' && userRole !== 'owner') {
+          document.getElementById('toolFormSection').style.display = 'none';
+        }
+
+        loadTools();
       } else {
-        alert("Please log in first.");
+        alert("Please log in.");
         window.location.href = 'login.html';
       }
     });
 
     addToolBtn.onclick = async () => {
-      const name = toolNameInput.value.trim();
-      const link = toolLinkInput.value.trim();
-      const category = toolCategorySelect.value;
+      if (userRole !== 'admin' && userRole !== 'owner') return;
 
-      if (!name || !link) return alert("Please enter both name and link");
+      const name = toolName.value.trim();
+      const link = toolLink.value.trim();
+      const category = toolCategory.value.trim().toLowerCase();
 
-      await addDoc(collection(db, "tools"), {
+      if (!name || !link || !category) return alert("Fill all fields");
+
+      await addDoc(collection(db, 'company_tools'), {
         name,
         link,
         category,
-        uid: currentUser.uid,
         createdAt: serverTimestamp()
       });
 
-      alert("Tool added successfully");
-      toolNameInput.value = "";
-      toolLinkInput.value = "";
-      await loadTools();
+      toolName.value = "";
+      toolLink.value = "";
+      toolCategory.value = "";
+
+      loadTools();
     };
 
+    categoryFilter.onchange = loadTools;
+
     async function loadTools() {
-      toolsList.innerHTML = '<h3>Available Tools:</h3>';
-      const q = query(collection(db, "tools"), orderBy("createdAt", "desc"));
-      const snapshot = await getDocs(q);
-      snapshot.forEach(doc => {
-        const data = doc.data();
-        const div = document.createElement('div');
-        div.innerHTML = `<p><strong>${data.name}</strong> [${data.category}] - <a href="${data.link}" target="_blank">Visit</a></p>`;
-        toolsList.appendChild(div);
+      toolsList.innerHTML = "<h3>Available Tools</h3>";
+      const q = query(collection(db, 'company_tools'), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+
+      let categories = new Set();
+      toolsList.innerHTML += '<ul>';
+
+      snap.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        categories.add(data.category);
+
+        const selectedCategory = categoryFilter.value;
+        if (selectedCategory !== 'all' && data.category !== selectedCategory) return;
+
+        const li = document.createElement('li');
+        li.innerHTML = `
+          <strong>${data.name}</strong> [${data.category}] -
+          <a href="${data.link}" target="_blank">Visit</a>
+          ${userRole === 'admin' || userRole === 'owner' ? `<button onclick="deleteTool('${id}')">Delete</button>` : ''}
+        `;
+        toolsList.appendChild(li);
+      });
+
+      toolsList.innerHTML += '</ul>';
+      updateCategoryOptions([...categories]);
+    }
+
+    function updateCategoryOptions(categories) {
+      categoryFilter.innerHTML = '<option value="all">All</option>';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat;
+        categoryFilter.appendChild(option);
       });
     }
+
+    window.deleteTool = async function(id) {
+      if (!confirm("Delete this tool?")) return;
+      await deleteDoc(doc(db, 'company_tools', id));
+      loadTools();
+    }
+
   </script></body>
 </html>

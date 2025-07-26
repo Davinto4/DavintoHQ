@@ -1,64 +1,91 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html><html lang="en">
+<head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>User Utilities - DavintoHQ</title>
-  <link rel="stylesheet" href="style.css">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-</head><body>
-  <header>
-    <h1>User Utilities</h1>
-    <button onclick="location.href='dashboard.html'">← Back to Dashboard</button>
-  </header>  <main>
-    <div class="section-container vertical-buttons">
-      <button class="section-btn" onclick="location.href='profile.html'">My Profile</button>
-      <button class="section-btn" onclick="location.href='tasks.html'">My Tasks</button>
-      <button class="section-btn" onclick="location.href='notifications.html'">Notifications</button>
-      <button class="section-btn" onclick="location.href='calendar.html'">Calendar</button>
-      <button class="section-btn" onclick="location.href='files.html'">My Files</button>
-    </div>
-  </main>  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f4f4f4;
-    }
+  <title>User Utilities</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="user-utilities.js"></script>
+</head>
+<body>
+  <h1>🔧 User Utilities</h1>  <div id="utilityBoard" class="tool-grid">
+    <div class="tool-card">
+      <h3>📤 File Upload</h3>
+      <p>Upload, tag, and manage your files.</p>
+      <a href="files.html">Open</a>
+    </div><div class="tool-card">
+  <h3>📅 Task Manager</h3>
+  <p>View your assigned tasks and status.</p>
+  <a href="tasks.html">Open</a>
+</div>
 
-    header {
-      background-color: #4CAF50;
-      color: white;
+<div class="tool-card">
+  <h3>🔔 Notifications</h3>
+  <p>View recent alerts and updates.</p>
+  <a href="notifications.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>📊 Reports</h3>
+  <p>See system logs and analytics reports.</p>
+  <a href="reports.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>📢 Announcements</h3>
+  <p>See official notices and updates.</p>
+  <a href="announcements.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>📆 Calendar</h3>
+  <p>Access your synced calendar.</p>
+  <a href="calendar.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>🗣️ Global Chat</h3>
+  <p>Chat with other users across the platform.</p>
+  <a href="global-chat.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>🧑‍💼 Profile</h3>
+  <p>View and update your profile info.</p>
+  <a href="user.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>🧮 Calculator</h3>
+  <p>Basic and advanced calculator functions.</p>
+  <a href="calculator.html">Open</a>
+</div>
+
+<div class="tool-card">
+  <h3>📘 Blog</h3>
+  <p>Read and comment on internal blog posts.</p>
+  <a href="blog.html">Open</a>
+</div>
+
+  </div>  <style>
+    .tool-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
       padding: 1rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
-
-    h1 {
-      margin: 0;
+    .tool-card {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 0 12px rgba(0,0,0,0.1);
     }
-
-    .section-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 2rem;
+    .tool-card h3 {
+      margin-bottom: 0.5rem;
     }
-
-    .section-btn {
-      width: 80%;
-      max-width: 400px;
-      margin: 1rem 0;
-      padding: 1.2rem;
-      font-size: 1.2rem;
-      background-color: #2196F3;
-      color: white;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
+    .tool-card a {
+      color: blue;
+      font-weight: bold;
+      text-decoration: underline;
     }
-
-    .section-btn:hover {
-      background-color: #1976D2;
-    }
-  </style></body></html>
+  </style></body>
+</html>

@@ -2,142 +2,103 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Company Tools</title>
+  <title>Company Tools Board</title>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 30px;
+    }
+    .tool-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      transition: 0.3s;
+    }
+    .tool-card:hover {
+      transform: translateY(-3px);
+    }
+    .tool-card h3 {
+      margin-top: 0;
+    }
+    .tool-card button {
+      background: #0066cc;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .tool-card button:hover {
+      background: #004d99;
+    }
+  </style>
 </head>
 <body>
-  <h1>🛠️ Company Tools</h1>  <div id="toolFormSection" style="margin-bottom: 20px;">
-    <h3>Add New Tool (Admin Only)</h3>
-    <input type="text" id="toolName" placeholder="Tool Name">
-    <input type="url" id="toolLink" placeholder="Tool Link">
-    <input type="text" id="toolCategory" placeholder="Category">
-    <button id="addToolBtn">Add Tool</button>
-  </div>  <div>
-    <label for="categoryFilter">Filter by Category:</label>
-    <select id="categoryFilter">
-      <option value="all">All</option>
-    </select>
-  </div>  <div id="toolsList"></div>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-auth.js";
-    import {
-      getFirestore, collection, addDoc, getDocs, deleteDoc, doc,
-      query, orderBy, serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.5.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
-      authDomain: "davintohq.firebaseapp.com",
-      projectId: "davintohq",
-      storageBucket: "davintohq.appspot.com",
-      messagingSenderId: "156992522736",
-      appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-
-    const toolName = document.getElementById('toolName');
-    const toolLink = document.getElementById('toolLink');
-    const toolCategory = document.getElementById('toolCategory');
-    const addToolBtn = document.getElementById('addToolBtn');
-    const toolsList = document.getElementById('toolsList');
-    const categoryFilter = document.getElementById('categoryFilter');
-
-    let currentUser = null;
-    let userRole = 'user';
-
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        currentUser = user;
-        const userSnap = await getDocs(query(collection(db, 'users')));
-        userSnap.forEach(doc => {
-          if (doc.id === currentUser.uid) {
-            userRole = doc.data().role || 'user';
-          }
-        });
-
-        if (userRole !== 'admin' && userRole !== 'owner') {
-          document.getElementById('toolFormSection').style.display = 'none';
-        }
-
-        loadTools();
-      } else {
-        alert("Please log in.");
-        window.location.href = 'login.html';
-      }
-    });
-
-    addToolBtn.onclick = async () => {
-      if (userRole !== 'admin' && userRole !== 'owner') return;
-
-      const name = toolName.value.trim();
-      const link = toolLink.value.trim();
-      const category = toolCategory.value.trim().toLowerCase();
-
-      if (!name || !link || !category) return alert("Fill all fields");
-
-      await addDoc(collection(db, 'company_tools'), {
-        name,
-        link,
-        category,
-        createdAt: serverTimestamp()
-      });
-
-      toolName.value = "";
-      toolLink.value = "";
-      toolCategory.value = "";
-
-      loadTools();
-    };
-
-    categoryFilter.onchange = loadTools;
-
-    async function loadTools() {
-      toolsList.innerHTML = "<h3>Available Tools</h3>";
-      const q = query(collection(db, 'company_tools'), orderBy("createdAt", "desc"));
-      const snap = await getDocs(q);
-
-      let categories = new Set();
-      toolsList.innerHTML += '<ul>';
-
-      snap.forEach(docSnap => {
-        const data = docSnap.data();
-        const id = docSnap.id;
-        categories.add(data.category);
-
-        const selectedCategory = categoryFilter.value;
-        if (selectedCategory !== 'all' && data.category !== selectedCategory) return;
-
-        const li = document.createElement('li');
-        li.innerHTML = `
-          <strong>${data.name}</strong> [${data.category}] -
-          <a href="${data.link}" target="_blank">Visit</a>
-          ${userRole === 'admin' || userRole === 'owner' ? `<button onclick="deleteTool('${id}')">Delete</button>` : ''}
-        `;
-        toolsList.appendChild(li);
-      });
-
-      toolsList.innerHTML += '</ul>';
-      updateCategoryOptions([...categories]);
-    }
-
-    function updateCategoryOptions(categories) {
-      categoryFilter.innerHTML = '<option value="all">All</option>';
-      categories.forEach(cat => {
-        const option = document.createElement('option');
-        option.value = cat;
-        option.textContent = cat;
-        categoryFilter.appendChild(option);
-      });
-    }
-
-    window.deleteTool = async function(id) {
-      if (!confirm("Delete this tool?")) return;
-      await deleteDoc(doc(db, 'company_tools', id));
-      loadTools();
-    }
-
-  </script></body>
+  <h1>🛠️ Company Tools Board</h1>
+  <div class="grid">
+    <div class="tool-card">
+      <h3>📆 Leave Application</h3>
+      <p>Submit and track leave requests.</p>
+      <button onclick="location.href='leave.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📅 Meeting Scheduler</h3>
+      <p>Schedule team or client meetings.</p>
+      <button onclick="location.href='meetings.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>🗳️ Feedback Form</h3>
+      <p>Send anonymous feedback to management.</p>
+      <button onclick="location.href='feedback.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>⏱️ Time Tracker</h3>
+      <p>Log and monitor work hours.</p>
+      <button onclick="location.href='timetracker.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📝 Quick Notes</h3>
+      <p>Save personal reminders or team notes.</p>
+      <button onclick="location.href='notes.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📊 Company Polls</h3>
+      <p>Participate in internal polls and surveys.</p>
+      <button onclick="location.href='polls.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📚 Internal Wiki</h3>
+      <p>Browse company policies and guides.</p>
+      <button onclick="location.href='wiki.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📆 Holiday Calendar</h3>
+      <p>View upcoming public/company holidays.</p>
+      <button onclick="location.href='calendar.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📇 Contact Directory</h3>
+      <p>Find contact info for team members.</p>
+      <button onclick="location.href='directory.html'">Open</button>
+    </div>
+    <div class="tool-card">
+      <h3>📁 Project Tracker</h3>
+      <p>Track project status and timelines.</p>
+      <button onclick="location.href='projects.html'">Open</button>
+    </div>
+  </div>
+</body>
 </html>

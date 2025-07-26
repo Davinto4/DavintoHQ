@@ -1,46 +1,38 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ | Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
+  <meta charset="UTF-8">
+  <title>DavintoHQ Notifications</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .notification { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 6px; background: #f5f5f5; }
+    .unread { background: #fff8dc; }
+    .admin-section { padding: 15px; background: #f0f0f0; margin-bottom: 20px; border-left: 4px solid #333; }
+    .read-btn { margin-top: 8px; display: inline-block; font-size: 12px; color: #007bff; cursor: pointer; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div class="dashboard-header">
-      <div class="header-left">
-        <h1 class="logo">DavintoHQ Dashboard</h1>
-      </div>
-      <div class="header-right">
-        <span id="username" class="username">Welcome</span>
-        <button class="theme-toggle" onclick="toggleTheme()">
-          <i class="fas fa-adjust"></i>
-        </button>
-        <button class="logout-button" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
-    </div><div id="feature-sections"></div>
 
-  </div>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-    import {
-      getAuth,
-      onAuthStateChanged,
-      signOut,
-      signInAnonymously
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-    import {
-      getFirestore,
-      collection,
-      query,
-      getDocs
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+  <h2>Notifications Center</h2>
+  <div id="userGreeting"></div>
 
+  <!-- Admin only section -->
+  <div id="adminTools" class="admin-section" style="display:none;">
+    <h3>Send Notification (Admins Only)</h3>
+    <input type="text" id="targetUser" placeholder="Recipient Username" /><br><br>
+    <input type="text" id="notifTitle" placeholder="Notification Title" /><br><br>
+    <textarea id="notifMessage" placeholder="Notification Message"></textarea><br><br>
+    <button onclick="sendNotification()">Send Notification</button>
+    <p id="notifStatus"></p>
+  </div>
+
+  <h3>Your Notifications</h3>
+  <div id="notifList"></div>
+
+  <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
       authDomain: "davintohq.firebaseapp.com",
@@ -50,81 +42,97 @@
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
 
-    const featureSections = document.getElementById("feature-sections");
-    const usernameEl = document.getElementById("username");
+    let currentUser = null;
+    let currentUsername = null;
+    let currentRole = null;
 
-    onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        const tokenResult = await user.getIdTokenResult();
-        const role = tokenResult.claims.role || "user";
-        usernameEl.textContent = `Welcome ${user.isAnonymous ? 'Guest' : (user.displayName || 'User')}`;
-
-        const q = query(collection(db, "features"));
-        const querySnapshot = await getDocs(q);
-        const categories = {};
-
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          if (data.role === "admin" && role !== "admin" && role !== "owner") return;
-
-          if (!categories[data.category]) {
-            categories[data.category] = [];
-          }
-          categories[data.category].push(data);
-        });
-
-        const preferredOrder = [
-          "User Utilities",
-          "Company Tools",
-          "Social Features",
-          "Novel Zone",
-          "Learning & Resources",
-          "Web Tools",
-          "Admin Access"
-        ];
-
-        preferredOrder.forEach(category => {
-          if (!categories[category]) return;
-
-          const section = document.createElement("section");
-          section.className = "feature-section";
-
-          const title = document.createElement("h2");
-          title.className = "category-title";
-          title.textContent = category;
-          section.appendChild(title);
-
-          const grid = document.createElement("div");
-          grid.className = "dashboard-grid";
-
-          categories[category].forEach(feature => {
-            const link = document.createElement("a");
-            link.href = feature.url;
-            link.className = "dashboard-button";
-            link.innerHTML = `<i class="${feature.icon || 'fa fa-link'}"></i><span>${feature.title}</span>`;
-            grid.appendChild(link);
-          });
-
-          section.appendChild(grid);
-          featureSections.appendChild(section);
-        });
-      } else {
-        signInAnonymously(auth);
+    auth.onAuthStateChanged(async (user) => {
+      if (!user) {
+        alert("Please log in to view notifications.");
+        return;
       }
+
+      currentUser = user;
+      const userDoc = await db.collection("users").doc(user.uid).get();
+      const userData = userDoc.data();
+      currentUsername = userData?.username || "Unknown";
+      currentRole = userData?.role || "user";
+
+      document.getElementById("userGreeting").innerHTML =
+        `<p>Hello <strong>${currentUsername}</strong></p>`;
+
+      if (currentRole === "admin" || currentRole === "owner") {
+        document.getElementById("adminTools").style.display = "block";
+      }
+
+      loadNotifications();
     });
 
-    window.logout = function () {
-      signOut(auth).then(() => {
-        location.href = "index.html";
+    function sendNotification() {
+      const username = document.getElementById("targetUser").value.trim();
+      const title = document.getElementById("notifTitle").value.trim();
+      const message = document.getElementById("notifMessage").value.trim();
+      const status = document.getElementById("notifStatus");
+
+      if (!username || !title || !message) {
+        status.innerText = "All fields are required.";
+        return;
+      }
+
+      db.collection("notifications").add({
+        to: username,
+        title: title,
+        message: message,
+        read: false,
+        sentBy: currentUsername,
+        sentAt: firebase.firestore.FieldValue.serverTimestamp()
+      })
+      .then(() => {
+        status.innerText = "✅ Notification sent.";
+        document.getElementById("targetUser").value = '';
+        document.getElementById("notifTitle").value = '';
+        document.getElementById("notifMessage").value = '';
+      })
+      .catch(err => {
+        status.innerText = "❌ Failed to send: " + err.message;
       });
     }
 
-    window.toggleTheme = function () {
-      document.body.classList.toggle("dark-theme");
+    function loadNotifications() {
+      db.collection("notifications")
+        .where("to", "==", currentUsername)
+        .orderBy("sentAt", "desc")
+        .onSnapshot(snapshot => {
+          const notifList = document.getElementById("notifList");
+          notifList.innerHTML = "";
+
+          if (snapshot.empty) {
+            notifList.innerHTML = "<p>No notifications yet.</p>";
+            return;
+          }
+
+          snapshot.forEach(doc => {
+            const data = doc.data();
+            const div = document.createElement("div");
+            div.className = `notification ${!data.read ? 'unread' : ''}`;
+            div.innerHTML = `
+              <strong>${data.title}</strong><br>
+              <small><i>From: ${data.sentBy || 'admin'}</i></small><br>
+              <p>${data.message}</p>
+              ${!data.read ? `<span class="read-btn" onclick="markAsRead('${doc.id}')">Mark as Read</span>` : ''}
+            `;
+            notifList.appendChild(div);
+          });
+        });
     }
-  </script></body>
+
+    function markAsRead(docId) {
+      db.collection("notifications").doc(docId).update({ read: true });
+    }
+  </script>
+</body>
 </html>

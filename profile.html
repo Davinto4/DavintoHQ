@@ -5,9 +5,55 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>User Profile</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    form, .user-info {
+      max-width: 400px;
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    input, button {
+      padding: 10px;
+      font-size: 16px;
+    }
+
+    #profile-pic {
+      width: 100px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 2px solid #333;
+    }
+
+    .user-info {
+      margin-top: 40px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      background: #f9f9f9;
+    }
+
+    .user-info h3 {
+      margin-bottom: 10px;
+    }
+  </style>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -20,6 +66,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
+    const storage = firebase.storage();
   </script>
 </head>
 <body>
@@ -30,17 +77,30 @@
 
   <main>
     <form id="profile-form">
+      <img id="profile-pic" src="https://via.placeholder.com/100" alt="Profile Picture" />
+      <input type="file" id="photoUpload" accept="image/*" />
+
       <label for="name">Name:</label>
       <input type="text" id="name" placeholder="Your Name" required />
 
       <label for="email">Email:</label>
-      <input type="email" id="email" placeholder="Your Email" disabled />
+      <input type="email" id="email" disabled />
 
       <label for="phone">Phone Number:</label>
-      <input type="tel" id="phone" placeholder="e.g. +2348012345678" />
+      <input type="tel" id="phone" placeholder="e.g. +2348012345678" pattern="^\+?[0-9]{10,15}$" />
+
+      <label for="role">Role:</label>
+      <input type="text" id="role" disabled />
 
       <button type="submit">Save Changes</button>
     </form>
+
+    <div class="user-info" id="user-info-box" style="display:none;">
+      <h3>📌 Your Profile Info</h3>
+      <p><strong>Username:</strong> <span id="display-name">Loading...</span></p>
+      <p><strong>Email:</strong> <span id="display-email">Loading...</span></p>
+      <p><strong>Phone:</strong> <span id="display-phone">Loading...</span></p>
+    </div>
   </main>
 
   <script>
@@ -48,29 +108,59 @@
       auth.signOut().then(() => location.href = "index.html");
     }
 
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
       if (user) {
         const uid = user.uid;
-        const email = user.email || "";
+        document.getElementById("email").value = user.email || "";
+        document.getElementById("display-email").innerText = user.email || "";
 
-        document.getElementById("email").value = email;
+        const docRef = db.collection("users").doc(uid);
+        const doc = await docRef.get();
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("name").value = data.name || "";
+          document.getElementById("phone").value = data.phone || "";
+          document.getElementById("role").value = data.role || "user";
 
-        db.collection("users").doc(uid).get().then(doc => {
-          if (doc.exists) {
-            const data = doc.data();
-            document.getElementById("name").value = data.name || "";
-            document.getElementById("phone").value = data.phone || "";
+          // Show dynamic display
+          document.getElementById("display-name").innerText = data.name || "(not set)";
+          document.getElementById("display-phone").innerText = data.phone || "(not set)";
+          document.getElementById("user-info-box").style.display = "block";
+
+          if (data.photoURL) {
+            document.getElementById("profile-pic").src = data.photoURL;
           }
+        }
+
+        document.getElementById("photoUpload").addEventListener("change", async (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const storageRef = storage.ref().child(`profiles/${uid}`);
+          await storageRef.put(file);
+          const downloadURL = await storageRef.getDownloadURL();
+
+          await docRef.set({ photoURL: downloadURL }, { merge: true });
+          document.getElementById("profile-pic").src = downloadURL;
         });
 
-        document.getElementById("profile-form").addEventListener("submit", e => {
+        document.getElementById("profile-form").addEventListener("submit", async e => {
           e.preventDefault();
           const name = document.getElementById("name").value.trim();
           const phone = document.getElementById("phone").value.trim();
 
-          db.collection("users").doc(uid).set({ name, phone }, { merge: true }).then(() => {
-            alert("Profile updated successfully!");
-          });
+          if (!/^\+?[0-9]{10,15}$/.test(phone)) {
+            alert("Invalid phone number format.");
+            return;
+          }
+
+          await docRef.set({ name, phone }, { merge: true });
+
+          // Update display
+          document.getElementById("display-name").innerText = name;
+          document.getElementById("display-phone").innerText = phone;
+
+          alert("Profile updated successfully!");
         });
       } else {
         location.href = "index.html";

@@ -5,59 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>User Profile</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; background: #f2f2f2; }
-    h1 { color: #333; }
-    .profile-section { background: white; padding: 20px; border-radius: 10px; max-width: 500px; margin: auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-    .field { margin-bottom: 15px; }
-    .field label { display: block; font-weight: bold; margin-bottom: 5px; }
-    .field span, .field input { display: block; width: 100%; }
-    .field input { padding: 8px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; display: none; }
-    .actions { margin-top: 20px; }
-    button { padding: 10px 15px; margin-right: 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer; }
-    button:hover { background: #0056b3; }
-    #changePasswordSection { margin-top: 30px; }
-  </style>
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-</head>
-<body>
-  <h1>User Profile</h1>
-  <div class="profile-section">
-    <div class="field">
-      <label>Username:</label>
-      <span id="usernameDisplay"></span>
-      <input type="text" id="usernameInput" />
-    </div>
-    <div class="field">
-      <label>Email:</label>
-      <span id="emailDisplay"></span>
-      <input type="email" id="emailInput" />
-    </div>
-    <div class="field">
-      <label>Phone Number:</label>
-      <span id="phoneDisplay"></span>
-      <input type="text" id="phoneInput" />
-    </div>
-    <div class="field">
-      <label>Role:</label>
-      <span id="roleDisplay" style="font-weight: bold;"></span>
-    </div>
-
-    <div class="actions">
-      <button onclick="toggleEdit()">Edit</button>
-      <button onclick="saveChanges()" style="display: none;" id="saveBtn">Save</button>
-      <button onclick="logout()">Logout</button>
-    </div>
-
-    <div id="changePasswordSection">
-      <h3>Change Password</h3>
-      <input type="email" id="resetEmail" placeholder="Enter your email" />
-      <button onclick="sendPasswordReset()">Send Reset Email</button>
-    </div>
-  </div>
-
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -68,85 +19,170 @@
       appId: "1:156992522736:web:7db1c51a089d9d1bad3535"
     };
     firebase.initializeApp(firebaseConfig);
+  </script>
+</head>
 
-    const auth = firebase.auth();
+<body>
+  <header>
+    <h2>User Profile</h2>
+    <button onclick="logout()">Logout</button>
+  </header>
+
+  <main class="profile-container">
+    <div class="profile-item">
+      <label>Username:</label>
+      <input type="text" id="username" disabled />
+      <button onclick="enableEdit('username')">Edit</button>
+    </div>
+
+    <div class="profile-item">
+      <label>Email:</label>
+      <input type="email" id="email" disabled />
+      <button disabled>Edit</button> <!-- Firebase doesn't allow email change easily -->
+    </div>
+
+    <div class="profile-item">
+      <label>Phone Number:</label>
+      <input type="tel" id="phone" disabled />
+      <button onclick="enableEdit('phone')">Edit</button>
+    </div>
+
+    <div class="profile-item">
+      <label>Role:</label>
+      <input type="text" id="role" disabled />
+      <span class="note">Only editable by Admin/Owner</span>
+    </div>
+
+    <div class="profile-item">
+      <label>Change Password:</label>
+      <button onclick="changePassword()">Send Reset Email</button>
+    </div>
+
+    <button id="saveBtn" onclick="saveProfile()">Save Changes</button>
+  </main>
+
+  <script>
     const db = firebase.firestore();
+    const auth = firebase.auth();
+    let currentUser;
 
-    let currentUser = null;
-
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(async (user) => {
       if (user) {
         currentUser = user;
-        document.getElementById("resetEmail").value = user.email;
-        const userDoc = await db.collection("users").doc(user.uid).get();
-        if (userDoc.exists) {
-          const data = userDoc.data();
-          document.getElementById("usernameDisplay").textContent = data.username || "Not set";
-          document.getElementById("emailDisplay").textContent = user.email || "N/A";
-          document.getElementById("phoneDisplay").textContent = data.phone || "Not set";
-          document.getElementById("roleDisplay").textContent = data.role || "user";
-          // Pre-fill input fields
-          document.getElementById("usernameInput").value = data.username || "";
-          document.getElementById("emailInput").value = user.email || "";
-          document.getElementById("phoneInput").value = data.phone || "";
+        const userRef = db.collection("users").doc(user.uid);
+        const doc = await userRef.get();
+
+        if (doc.exists) {
+          const data = doc.data();
+          document.getElementById("username").value = data.username || "";
+          document.getElementById("phone").value = data.phone || "";
+          document.getElementById("email").value = user.email;
+          document.getElementById("role").value = data.role || "user";
+        } else {
+          console.warn("User data not found.");
         }
       } else {
-        window.location.href = "index.html"; // Redirect if not logged in
+        window.location.href = "index.html";
       }
     });
 
-    function toggleEdit() {
-      document.getElementById("usernameDisplay").style.display = "none";
-      document.getElementById("emailDisplay").style.display = "none";
-      document.getElementById("phoneDisplay").style.display = "none";
-
-      document.getElementById("usernameInput").style.display = "block";
-      document.getElementById("emailInput").style.display = "block";
-      document.getElementById("phoneInput").style.display = "block";
-
-      document.getElementById("saveBtn").style.display = "inline-block";
+    function enableEdit(fieldId) {
+      const input = document.getElementById(fieldId);
+      input.disabled = false;
+      input.focus();
     }
 
-    async function saveChanges() {
-      const username = document.getElementById("usernameInput").value.trim();
-      const email = document.getElementById("emailInput").value.trim();
-      const phone = document.getElementById("phoneInput").value.trim();
+    function saveProfile() {
+      const username = document.getElementById("username").value.trim();
+      const phone = document.getElementById("phone").value.trim();
 
-      if (currentUser && username && email) {
-        try {
-          // Update Auth email
-          if (email !== currentUser.email) {
-            await currentUser.updateEmail(email);
-          }
+      if (!username || !phone) return alert("Please fill in all fields.");
 
-          // Update Firestore data
-          await db.collection("users").doc(currentUser.uid).update({
-            username,
-            phone
-          });
-
-          alert("Profile updated!");
-
-          // Reload
-          location.reload();
-        } catch (error) {
-          alert("Error: " + error.message);
-        }
-      }
+      db.collection("users").doc(currentUser.uid).update({
+        username,
+        phone
+      })
+      .then(() => {
+        alert("Profile updated successfully!");
+        document.getElementById("username").disabled = true;
+        document.getElementById("phone").disabled = true;
+      })
+      .catch((error) => {
+        console.error("Error updating profile:", error);
+        alert("Failed to update profile.");
+      });
     }
 
-    function sendPasswordReset() {
-      const email = document.getElementById("resetEmail").value.trim();
-      if (email) {
-        auth.sendPasswordResetEmail(email)
-          .then(() => alert("Password reset email sent."))
-          .catch(err => alert("Error: " + err.message));
-      }
+    function changePassword() {
+      const email = currentUser.email;
+      firebase.auth().sendPasswordResetEmail(email)
+        .then(() => alert("Password reset email sent."))
+        .catch(error => alert("Error: " + error.message));
     }
 
     function logout() {
-      auth.signOut().then(() => window.location.href = "index.html");
+      firebase.auth().signOut().then(() => {
+        window.location.href = "index.html";
+      });
     }
   </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      background: #f5f5f5;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .profile-container {
+      max-width: 500px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .profile-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      width: 120px;
+      font-weight: bold;
+    }
+
+    input {
+      flex: 1;
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+    }
+
+    button {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+    }
+
+    #saveBtn {
+      width: 100%;
+      background: #1976d2;
+      color: white;
+      border: none;
+    }
+
+    .note {
+      font-size: 0.8rem;
+      color: gray;
+    }
+  </style>
 </body>
 </html>

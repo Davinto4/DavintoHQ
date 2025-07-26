@@ -1,58 +1,28 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
   <meta charset="UTF-8" />
+  <title>Tasks - DavintoHQ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>DavintoHQ | Tasks</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js"></script>
-</head><body>
-  <div class="container">
-    <div class="dashboard-header">
-      <div class="header-left">
-        <h1 class="logo">DavintoHQ Tasks</h1>
-      </div>
-      <div class="header-right">
-        <button class="theme-toggle" onclick="toggleTheme()">
-          <i class="fas fa-adjust"></i>
-        </button>
-        <button class="logout-button" onclick="logout()">
-          <i class="fas fa-sign-out-alt"></i> Logout
-        </button>
-      </div>
-    </div><div class="task-section">
-  <h2 class="section-title">My Tasks</h2>
-  <form id="task-form">
-    <input type="text" id="task-input" placeholder="Enter new task..." required />
-    <select id="task-priority">
-      <option value="low">Low</option>
-      <option value="medium">Medium</option>
-      <option value="high">High</option>
-    </select>
-    <button type="submit"><i class="fas fa-plus"></i></button>
-  </form>
-  <ul id="task-list"></ul>
-</div>
 
-  </div>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
     import {
       getAuth,
-      onAuthStateChanged,
-      signOut,
-      signInAnonymously
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
     import {
       getFirestore,
       collection,
       addDoc,
-      updateDoc,
       getDocs,
-      deleteDoc,
+      query,
+      where,
+      Timestamp,
       doc,
-      onSnapshot
-    } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
+      getDoc
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -67,76 +37,197 @@
     const auth = getAuth(app);
     const db = getFirestore(app);
 
-    const taskForm = document.getElementById("task-form");
-    const taskInput = document.getElementById("task-input");
-    const taskPriority = document.getElementById("task-priority");
-    const taskList = document.getElementById("task-list");
+    let currentUserId = null;
+    let currentUserRole = "user";
 
-    let userId = null;
+    const taskForm = document.getElementById("taskForm");
+    const tasksContainer = document.getElementById("tasksContainer");
+    const assignToInput = document.getElementById("assignTo");
+    const taskFormSection = document.getElementById("taskFormSection");
 
     onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        userId = user.uid;
-        const tasksRef = collection(db, "users", userId, "tasks");
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
 
-        onSnapshot(tasksRef, (snapshot) => {
-          taskList.innerHTML = "";
-          snapshot.forEach(docSnap => {
-            const task = docSnap.data();
-            const li = document.createElement("li");
-            li.innerHTML = `
-              <input type="checkbox" ${task.completed ? "checked" : ""} onchange="toggleComplete('${docSnap.id}', this.checked)" />
-              <span contenteditable="true" onblur="editTask('${docSnap.id}', this.innerText)">${task.text}</span>
-              <small class="priority">Priority: ${task.priority}</small>
-              <button onclick="deleteTask('${docSnap.id}')"><i class='fas fa-trash'></i></button>
-            `;
-            taskList.appendChild(li);
-          });
-        });
+      currentUserId = user.uid;
+
+      const userDoc = await getDoc(doc(db, "users", currentUserId));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        currentUserRole = data.role || "user";
+
+        if (currentUserRole === "admin" || currentUserRole === "owner") {
+          taskFormSection.style.display = "block";
+        } else {
+          taskFormSection.style.display = "none";
+        }
+
+        loadTasks(currentUserRole === "admin" || currentUserRole === "owner" ? null : currentUserId);
+      }
+    });
+
+    async function loadTasks(filterByUserId = null) {
+      tasksContainer.innerHTML = "Loading tasks...";
+      let q;
+      if (filterByUserId) {
+        q = query(collection(db, "tasks"), where("assignedTo", "==", filterByUserId));
       } else {
-        signInAnonymously(auth);
+        q = query(collection(db, "tasks"));
       }
-    });
 
-    taskForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const text = taskInput.value.trim();
-      const priority = taskPriority.value;
-      if (text && userId) {
-        await addDoc(collection(db, "users", userId, "tasks"), {
-          text,
-          priority,
-          completed: false
-        });
-        taskInput.value = "";
+      const querySnapshot = await getDocs(q);
+      tasksContainer.innerHTML = "";
+
+      if (querySnapshot.empty) {
+        tasksContainer.innerHTML = "<p>No tasks found.</p>";
+        return;
       }
-    });
 
-    window.deleteTask = async (taskId) => {
-      if (userId) {
-        await deleteDoc(doc(db, "users", userId, "tasks", taskId));
-      }
-    };
-
-    window.editTask = async (taskId, newText) => {
-      if (userId) {
-        await updateDoc(doc(db, "users", userId, "tasks", taskId), { text: newText });
-      }
-    };
-
-    window.toggleComplete = async (taskId, isCompleted) => {
-      if (userId) {
-        await updateDoc(doc(db, "users", userId, "tasks", taskId), { completed: isCompleted });
-      }
-    };
-
-    window.logout = function () {
-      signOut(auth).then(() => {
-        location.href = "index.html";
+      querySnapshot.forEach((doc) => {
+        const task = doc.data();
+        const div = document.createElement("div");
+        div.className = "task";
+        div.innerHTML = `
+          <h4>${task.title}</h4>
+          <p>${task.description}</p>
+          <small><b>Assigned To:</b> ${task.assignedTo}</small><br/>
+          <small><b>Due:</b> ${task.dueDate?.toDate().toLocaleDateString()}</small>
+        `;
+        tasksContainer.appendChild(div);
       });
     }
 
-    window.toggleTheme = function () {
-      document.body.classList.toggle("dark-theme");
+    taskForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("taskTitle").value.trim();
+      const description = document.getElementById("taskDesc").value.trim();
+      const dueDate = document.getElementById("taskDue").value;
+      const assignedTo = assignToInput.value.trim();
+
+      if (!title || !description || !dueDate || !assignedTo) {
+        alert("Please fill in all fields.");
+        return;
+      }
+
+      try {
+        await addDoc(collection(db, "tasks"), {
+          title,
+          description,
+          dueDate: Timestamp.fromDate(new Date(dueDate)),
+          assignedTo,
+          createdBy: currentUserId,
+          createdAt: Timestamp.now()
+        });
+
+        taskForm.reset();
+        loadTasks(currentUserRole === "admin" || currentUserRole === "owner" ? null : currentUserId);
+        alert("Task assigned!");
+      } catch (error) {
+        console.error("Error adding task:", error);
+        alert("Error adding task");
+      }
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f7fa;
+      padding: 2rem;
     }
-  </script></body></html>
+
+    h2 {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    #taskFormSection {
+      background: #fff;
+      padding: 1rem;
+      border-radius: 8px;
+      max-width: 500px;
+      margin: auto;
+      margin-bottom: 2rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 0.3rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+
+    button {
+      margin-top: 1rem;
+      padding: 12px;
+      background: #1976d2;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    #tasksContainer {
+      max-width: 600px;
+      margin: auto;
+    }
+
+    .task {
+      background: #fff;
+      border-left: 4px solid #1976d2;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 6px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.05);
+    }
+
+    .task h4 {
+      margin: 0 0 0.5rem;
+    }
+
+    .task p {
+      margin: 0 0 0.5rem;
+    }
+
+    .task small {
+      color: #555;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>My Tasks</h2>
+
+  <div id="taskFormSection" style="display: none;">
+    <form id="taskForm">
+      <label for="taskTitle">Task Title</label>
+      <input type="text" id="taskTitle" required />
+
+      <label for="taskDesc">Description</label>
+      <textarea id="taskDesc" rows="4" required></textarea>
+
+      <label for="taskDue">Due Date</label>
+      <input type="date" id="taskDue" required />
+
+      <label for="assignTo">Assign To (User UID)</label>
+      <input type="text" id="assignTo" placeholder="Enter User UID" required />
+
+      <button type="submit">Assign Task</button>
+    </form>
+  </div>
+
+  <div id="tasksContainer">Loading tasks...</div>
+</body>
+</html>

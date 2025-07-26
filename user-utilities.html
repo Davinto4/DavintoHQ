@@ -7,22 +7,58 @@
 </head><body>
   <header>
     <h1>User Utilities</h1>
-    <button onclick="goBack()">⬅ Back to Dashboard</button>
+    <button onclick="location.href='dashboard.html'">← Back to Dashboard</button>
   </header>  <main>
-    <section class="utility-section">
-      <h2>Welcome to User Utilities</h2>
-      <p>Here you'll find tools and pages tailored for individual users.</p><div class="utility-buttons">
-    <button onclick="location.href='profile.html'">View/Edit Profile</button>
-    <button onclick="location.href='tasks.html'">Your Tasks</button>
-    <button onclick="location.href='notifications.html'">Notifications</button>
-    <button onclick="location.href='settings.html'">Account Settings</button>
-    <button onclick="location.href='calendar.html'">Calendar</button>
-    <button onclick="location.href='files.html'">Your Files</button>
-  </div>
-</section>
-
-  </main>  <script>
-    function goBack() {
-      window.location.href = "dashboard.html";
+    <div class="section-container vertical-buttons">
+      <button class="section-btn" onclick="location.href='profile.html'">My Profile</button>
+      <button class="section-btn" onclick="location.href='tasks.html'">My Tasks</button>
+      <button class="section-btn" onclick="location.href='notifications.html'">Notifications</button>
+      <button class="section-btn" onclick="location.href='calendar.html'">Calendar</button>
+      <button class="section-btn" onclick="location.href='files.html'">My Files</button>
+    </div>
+  </main>  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f4f4f4;
     }
-  </script></body></html>
+
+    header {
+      background-color: #4CAF50;
+      color: white;
+      padding: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    h1 {
+      margin: 0;
+    }
+
+    .section-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .section-btn {
+      width: 80%;
+      max-width: 400px;
+      margin: 1rem 0;
+      padding: 1.2rem;
+      font-size: 1.2rem;
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    .section-btn:hover {
+      background-color: #1976D2;
+    }
+  </style></body></html>

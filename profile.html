@@ -5,43 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>User Profile</title>
   <link rel="stylesheet" href="style.css" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    form {
-      max-width: 400px;
-      margin: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 15px;
-    }
-
-    input, button {
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    #profile-pic {
-      width: 100px;
-      height: 100px;
-      object-fit: cover;
-      border-radius: 50%;
-      border: 2px solid #333;
-    }
-  </style>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js"></script>
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyDT5tgWOLu3oUf7XTFsFzAuszUcERhoOTw",
@@ -54,7 +20,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
     const auth = firebase.auth();
-    const storage = firebase.storage();
   </script>
 </head>
 <body>
@@ -65,20 +30,14 @@
 
   <main>
     <form id="profile-form">
-      <img id="profile-pic" src="https://via.placeholder.com/100" alt="Profile Picture" />
-      <input type="file" id="photoUpload" accept="image/*" />
-
       <label for="name">Name:</label>
       <input type="text" id="name" placeholder="Your Name" required />
 
       <label for="email">Email:</label>
-      <input type="email" id="email" disabled />
+      <input type="email" id="email" placeholder="Your Email" disabled />
 
       <label for="phone">Phone Number:</label>
-      <input type="tel" id="phone" placeholder="e.g. +2348012345678" pattern="^\+?[0-9]{10,15}$" />
-
-      <label for="role">Role:</label>
-      <input type="text" id="role" disabled />
+      <input type="tel" id="phone" placeholder="e.g. +2348012345678" />
 
       <button type="submit">Save Changes</button>
     </form>
@@ -89,47 +48,29 @@
       auth.signOut().then(() => location.href = "index.html");
     }
 
-    auth.onAuthStateChanged(async user => {
+    auth.onAuthStateChanged(user => {
       if (user) {
         const uid = user.uid;
-        document.getElementById("email").value = user.email || "";
+        const email = user.email || "";
 
-        const doc = await db.collection("users").doc(uid).get();
-        if (doc.exists) {
-          const data = doc.data();
-          document.getElementById("name").value = data.name || "";
-          document.getElementById("phone").value = data.phone || "";
-          document.getElementById("role").value = data.role || "user";
+        document.getElementById("email").value = email;
 
-          if (data.photoURL) {
-            document.getElementById("profile-pic").src = data.photoURL;
+        db.collection("users").doc(uid).get().then(doc => {
+          if (doc.exists) {
+            const data = doc.data();
+            document.getElementById("name").value = data.name || "";
+            document.getElementById("phone").value = data.phone || "";
           }
-        }
-
-        document.getElementById("photoUpload").addEventListener("change", async (e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-
-          const storageRef = storage.ref().child(`profiles/${uid}`);
-          await storageRef.put(file);
-          const downloadURL = await storageRef.getDownloadURL();
-
-          await db.collection("users").doc(uid).set({ photoURL: downloadURL }, { merge: true });
-          document.getElementById("profile-pic").src = downloadURL;
         });
 
-        document.getElementById("profile-form").addEventListener("submit", async e => {
+        document.getElementById("profile-form").addEventListener("submit", e => {
           e.preventDefault();
           const name = document.getElementById("name").value.trim();
           const phone = document.getElementById("phone").value.trim();
 
-          if (!/^\+?[0-9]{10,15}$/.test(phone)) {
-            alert("Invalid phone number format.");
-            return;
-          }
-
-          await db.collection("users").doc(uid).set({ name, phone }, { merge: true });
-          alert("Profile updated successfully!");
+          db.collection("users").doc(uid).set({ name, phone }, { merge: true }).then(() => {
+            alert("Profile updated successfully!");
+          });
         });
       } else {
         location.href = "index.html";
